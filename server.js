@@ -17,7 +17,7 @@ app.use(cors());
 app.use(express.json());
 
 // Static folder for Frontend (Vanilla HTML)
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname)));
 
 // Routes
 app.use('/api', require('./routes/api'));
