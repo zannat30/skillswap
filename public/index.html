@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillSwap | Marketplace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo-box">S</div>
+                <h2>Skill<span>Swap</span></h2>
+            </div>
+            <nav class="sidebar-nav">
+                <p class="nav-label">Main Menu</p>
+                <a href="index.html" class="nav-item active"><i data-lucide="compass"></i><span>Marketplace</span></a>
+                <a href="sessions.html" class="nav-item"><i data-lucide="book-open"></i><span>Active Sessions</span><span class="badge">1</span></a>
+                <a href="skillbot.html" class="nav-item"><i data-lucide="message-square"></i><span>AI SkillBot</span></a>
+                <a href="profile.html" class="nav-item"><i data-lucide="user"></i><span>My Profile</span></a>
+                <a href="leaderboard.html" class="nav-item"><i data-lucide="trophy"></i><span>Leaderboard</span></a>
+            </nav>
+        </aside>
+
+        <div class="main-wrapper">
+            <!-- Navbar -->
+            <header class="navbar">
+                <div class="search-bar">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <input type="text" placeholder="Search skills, mentors, or domains...">
+                </div>
+                <div class="nav-actions">
+                    <div class="credit-wallet"><i data-lucide="wallet"></i><span>100 Credits</span></div>
+                    <div class="user-profile"><div class="avatar">Z</div></div>
+                </div>
+            </header>
+
+            <main id="app-view">
+                <section class="view active">
+                    <div class="hero-section text-center">
+                        <h1 class="hero-title">Welcome to <span class="text-gradient">SkillSwap</span></h1>
+                        <p class="hero-subtitle">Trade skills instead of money using our secure escrow logic.</p>
+                    </div>
+
+                    <div class="category-tabs">
+                        <button class="tab-btn active" data-category="all">All Domains</button>
+                        <button class="tab-btn" data-category="technology">Technology</button>
+                        <button class="tab-btn" data-category="creative">Creative Arts</button>
+                    </div>
+
+                    <div class="mentors-grid" id="mentors-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Booking Modal -->
+    <div class="modal-overlay" id="booking-modal">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h3>Book Session</h3>
+                <button class="icon-btn close-modal"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="escrow-details">
+                    <p class="text-secondary mb-3">Booking 60-min session with <strong id="modal-mentor-name" class="text-primary">Mentor</strong>.</p>
+                    <div class="credit-breakdown">
+                        <div class="flex-between"><span>Session Cost</span><span>50 Credits</span></div>
+                        <div class="flex-between text-secondary text-sm mt-1"><span>Escrow Fee (10%)</span><span>5 Credits</span></div>
+                        <hr class="glass-divider my-3">
+                        <div class="flex-between font-bold text-amber"><span>Total Locked in Escrow</span><span>50 Credits</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn glass-btn close-modal">Cancel</button>
+                <button class="btn btn-primary" id="confirm-booking-btn">Confirm & Lock Credits</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/marketplace.js"></script>
+</body>
+</html>
