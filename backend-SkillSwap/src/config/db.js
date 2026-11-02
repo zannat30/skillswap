@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const UserProfile = require('../models/UserProfile');
 
 let mongoConnected = false;
 
@@ -12,9 +13,11 @@ const connectDB = async () => {
 
   try {
     await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 2500
+      dbName: 'skillswap',
+      serverSelectionTimeoutMS: 5000
     });
     mongoConnected = true;
+    await UserProfile.createIndexes().catch(() => {});
     console.log(`[MongoDB Atlas]    ✅ Connected successfully to ${mongoose.connection.host}/skillswap`);
     return true;
   } catch (error) {

@@ -21,6 +21,7 @@ const aiRoutes = require('./src/routes/aiRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
 const { getMarketplace, getBarterMatches } = require('./src/controllers/profileController');
 const { getTopMentors, getTopLearners } = require('./src/controllers/leaderboardController');
+const { sweepExpiredPendingSessions } = require('./src/controllers/sessionController');
 const { optionalAuth } = require('./src/middleware/authMiddleware');
 
 const app = express();
@@ -81,13 +82,23 @@ app.get('/api/leaderboard/learners', getTopLearners);
 // Centralized Error Handler
 app.use(errorHandler);
 
+// Background 24-Hour Pending Session Auto-Cancel & Escrow Refund Timer (Section 5.3 / Gap 2)
+const pendingTimeoutInterval = setInterval(() => {
+  sweepExpiredPendingSessions().catch(() => {});
+}, 60 * 1000);
+if (typeof pendingTimeoutInterval.unref === 'function') {
+  pendingTimeoutInterval.unref();
+}
+
 const PORT = process.env.PORT || 5000;
 
 if (require.main === module) {
-  connectDB().then(() => {
+  connectDB().then(async () => {
+    await sweepExpiredPendingSessions().catch(() => {});
     server.listen(PORT, () => {
       console.log(`[SkillSwap Server] 🚀 Express REST API listening on http://localhost:${PORT}`);
       console.log(`[Socket.io Engine] ⚡ WebSocket Server initialized and awaiting room connections`);
+      console.log(`[Escrow Watchdog] ⏱️ 24-Hour PENDING session auto-cancel & refund timer active`);
     });
   });
 }

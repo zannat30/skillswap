@@ -1,6 +1,8 @@
 const request = require('supertest');
 const { app } = require('../server');
 const { resetMemoryStore, getStore } = require('../src/config/memoryStore');
+const { sweepExpiredPendingSessions } = require('../src/controllers/sessionController');
+const { verifySessionMember } = require('../src/sockets/sessionSocket');
 
 describe('SkillSwap Virtual Credit Escrow & Lifecycle Suite (UT-01 to UT-07)', () => {
   beforeEach(() => {
@@ -166,5 +168,58 @@ describe('SkillSwap Virtual Credit Escrow & Lifecycle Suite (UT-01 to UT-07)', (
 
     const learnerAfter = store.users.find((u) => u._id === '664f1a2b3c4d5e6f7a8b9c01').credits;
     expect(learnerAfter).toBe(learnerBefore + 50);
+  });
+
+  test('UT-08: 24-Hour Pending Session Auto-Cancel & Escrow Refund (Gap 2)', async () => {
+    const loginRes = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'zannat@ist.edu.bd', password: 'StrongPassword123!' });
+
+    const bookRes = await request(app)
+      .post('/api/sessions/book')
+      .set('Authorization', `Bearer ${loginRes.body.token}`)
+      .send({
+        mentorId: '664f1a2b3c4d5e6f7a8b9c99',
+        skillName: 'React.js State Management',
+        domain: 'Technology'
+      });
+
+    expect(bookRes.statusCode).toBe(201);
+    const sessionId = bookRes.body.session._id;
+
+    const store = getStore();
+    const bookedSession = store.sessions.find((s) => String(s._id) === String(sessionId));
+    const learnerBeforeSweep = store.users.find((u) => u._id === '664f1a2b3c4d5e6f7a8b9c01').credits;
+
+    // Backdate createdAt to 25 hours ago
+    bookedSession.createdAt = new Date(Date.now() - 25 * 60 * 60 * 1000);
+
+    const sweptCount = await sweepExpiredPendingSessions();
+    expect(sweptCount).toBe(1);
+    expect(bookedSession.status).toBe('CANCELLED');
+    expect(bookedSession.creditsLocked).toBe(0);
+
+    const learnerAfterSweep = store.users.find((u) => u._id === '664f1a2b3c4d5e6f7a8b9c01').credits;
+    expect(learnerAfterSweep).toBe(learnerBeforeSweep + 50);
+  });
+
+  test('UT-09: Socket Room Participant Verification (Gap 3: Learner/Mentor Allowed, Outsider Blocked)', async () => {
+    const sessionId = '665099aabbccddeeff001122'; // Seeded session: Zannat (Learner) & Alex (Mentor)
+
+    // Learner (Zannat) -> allowed
+    const learnerCheck = await verifySessionMember(sessionId, '664f1a2b3c4d5e6f7a8b9c01', 'USER');
+    expect(learnerCheck.allowed).toBe(true);
+
+    // Mentor (Alex) -> allowed
+    const mentorCheck = await verifySessionMember(sessionId, '664f1a2b3c4d5e6f7a8b9c99', 'USER');
+    expect(mentorCheck.allowed).toBe(true);
+
+    // Unrelated user (Elena) -> blocked
+    const outsiderCheck = await verifySessionMember(sessionId, '664f1a2b3c4d5e6f7a8b9c88', 'USER');
+    expect(outsiderCheck.allowed).toBe(false);
+
+    // Admin -> allowed
+    const adminCheck = await verifySessionMember(sessionId, '664f1a2b3c4d5e6f7a8b9c00', 'ADMIN');
+    expect(adminCheck.allowed).toBe(true);
   });
 });

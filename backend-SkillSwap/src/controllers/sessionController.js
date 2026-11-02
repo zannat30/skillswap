@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const UserProfile = require('../models/UserProfile');
 const Session = require('../models/Session');
@@ -10,6 +11,9 @@ const {
   calculateEscrowSplit,
   validateStateTransition
 } = require('../utils/escrowEngine');
+
+const PENDING_TIMEOUT_MS = () =>
+  Number(process.env.PENDING_SESSION_TIMEOUT_MS) || 24 * 60 * 60 * 1000; // 24 hours
 
 const getInitials = (name = 'M') => {
   const parts = String(name).trim().split(/\s+/);
@@ -31,7 +35,126 @@ const enrichSessionInMemory = (s, store) => {
   };
 };
 
-// Feature #28: POST /api/sessions/book
+// Gap 2 (Feature #36 & Section 8): 24-Hour Pending Session Auto-Cancel & +50 CR Refund Sweep
+const sweepExpiredPendingSessions = async () => {
+  const cutoff = new Date(Date.now() - PENDING_TIMEOUT_MS());
+  let sweptCount = 0;
+
+  if (isMongoConnected()) {
+    const expiredSessions = await Session.find({
+      status: 'PENDING',
+      createdAt: { $lte: cutoff }
+    });
+
+    for (const exp of expiredSessions) {
+      const dbSession = await mongoose.startSession();
+      try {
+        await dbSession.withTransaction(async () => {
+          const session = await Session.findById(exp._id).session(dbSession);
+          if (!session || session.status !== 'PENDING') return;
+
+          const refundAmount = session.creditsLocked || SESSION_COST;
+          session.status = 'CANCELLED';
+          session.creditsLocked = 0;
+          await session.save({ session: dbSession });
+
+          if (session.bookedSlot?.date && session.bookedSlot?.slot) {
+            const mp = await UserProfile.findOne({ userId: session.mentorId }).session(dbSession);
+            if (mp) {
+              const entry = mp.availability.find((a) => a.date === session.bookedSlot.date);
+              if (entry) {
+                if (!entry.slots.includes(session.bookedSlot.slot)) {
+                  entry.slots.push(session.bookedSlot.slot);
+                }
+              } else {
+                mp.availability.push({
+                  date: session.bookedSlot.date,
+                  slots: [session.bookedSlot.slot]
+                });
+              }
+              await mp.save({ session: dbSession });
+            }
+          }
+
+          const learner = await User.findById(session.learnerId).session(dbSession);
+          if (learner) {
+            learner.credits += refundAmount;
+            await learner.save({ session: dbSession });
+          }
+
+          await Transaction.create(
+            [
+              {
+                userId: session.learnerId,
+                sessionId: session._id,
+                type: 'REFUND',
+                amount: refundAmount,
+                balanceAfter: learner ? learner.credits : null,
+                description: `24h Timeout Auto-Cancel Refund (+${refundAmount} CR) for ${session.skillName}`
+              }
+            ],
+            { session: dbSession }
+          );
+          sweptCount += 1;
+        });
+      } catch (_) {
+        // Ignore individual sweep failure
+      } finally {
+        await dbSession.endSession();
+      }
+    }
+    return sweptCount;
+  }
+
+  // In-Memory Store path
+  const store = getStore();
+  store.sessions.forEach((session) => {
+    if (session.status === 'PENDING' && new Date(session.createdAt) <= cutoff) {
+      const refundAmount = session.creditsLocked || SESSION_COST;
+      session.status = 'CANCELLED';
+      session.creditsLocked = 0;
+
+      if (session.bookedSlot?.date && session.bookedSlot?.slot) {
+        const mp = store.userProfiles.find((p) => String(p.userId) === String(session.mentorId));
+        if (mp) {
+          if (!Array.isArray(mp.availability)) mp.availability = [];
+          const entry = mp.availability.find((a) => a.date === session.bookedSlot.date);
+          if (entry) {
+            if (!entry.slots.includes(session.bookedSlot.slot)) {
+              entry.slots.push(session.bookedSlot.slot);
+            }
+          } else {
+            mp.availability.push({
+              _id: generateId(),
+              date: session.bookedSlot.date,
+              slots: [session.bookedSlot.slot]
+            });
+          }
+        }
+      }
+
+      const learner = store.users.find((u) => String(u._id) === String(session.learnerId));
+      if (learner) {
+        learner.credits += refundAmount;
+      }
+
+      store.transactions.unshift({
+        _id: generateId(),
+        userId: String(session.learnerId),
+        sessionId: session._id,
+        type: 'REFUND',
+        amount: refundAmount,
+        balanceAfter: learner ? learner.credits : null,
+        description: `24h Timeout Auto-Cancel Refund (+${refundAmount} CR) for ${session.skillName}`,
+        createdAt: new Date()
+      });
+      sweptCount += 1;
+    }
+  });
+  return sweptCount;
+};
+
+// Feature #28: POST /api/sessions/book (with Mongoose Multi-Document ACID Transaction)
 const bookSession = async (req, res, next) => {
   try {
     const learnerId = req.body.learnerId || req.user.userId;
@@ -51,87 +174,124 @@ const bookSession = async (req, res, next) => {
     const sessionCost = SESSION_COST; // 50 CR
 
     if (isMongoConnected()) {
-      const learner = await User.findById(learnerId);
-      if (!learner) {
-        return res.status(404).json({
-          success: false,
-          error: { code: 'USER_NOT_FOUND', httpStatus: 404, message: 'Learner not found.' }
-        });
-      }
-
-      if (learner.credits < sessionCost) {
-        return res.status(400).json({
-          success: false,
-          error: {
-            code: 'INSUFFICIENT_CREDITS',
-            httpStatus: 400,
-            message: `Learner has fewer than ${sessionCost} CR available in wallet.`
-          }
-        });
-      }
-
+      const dbSession = await mongoose.startSession();
+      let createdSessionDoc = null;
+      let remainingCredits = 0;
       let resolvedMentorId = mentorId;
-      let mentorProfile = null;
-      if (resolvedMentorId) {
-        mentorProfile = await UserProfile.findOne({ userId: resolvedMentorId });
-      } else if (mentorName) {
-        mentorProfile = await UserProfile.findOne({ displayName: mentorName });
-        if (mentorProfile) resolvedMentorId = mentorProfile.userId;
-      }
+      let httpErr = null;
 
-      if (String(resolvedMentorId) === String(learner._id)) {
-        return res.status(400).json({
-          success: false,
-          error: {
-            code: 'SELF_BOOKING_NOT_ALLOWED',
-            httpStatus: 400,
-            message: 'You cannot book a mentorship session with yourself.'
+      try {
+        await dbSession.withTransaction(async () => {
+          const learner = await User.findById(learnerId).session(dbSession);
+          if (!learner) {
+            httpErr = {
+              status: 404,
+              code: 'USER_NOT_FOUND',
+              message: 'Learner not found.'
+            };
+            throw new Error('ABORT_TX');
           }
+
+          if (learner.credits < sessionCost) {
+            httpErr = {
+              status: 400,
+              code: 'INSUFFICIENT_CREDITS',
+              message: `Learner has fewer than ${sessionCost} CR available in wallet.`
+            };
+            throw new Error('ABORT_TX');
+          }
+
+          let mentorProfile = null;
+          if (resolvedMentorId) {
+            mentorProfile = await UserProfile.findOne({ userId: resolvedMentorId }).session(dbSession);
+          } else if (mentorName) {
+            mentorProfile = await UserProfile.findOne({ displayName: mentorName }).session(dbSession);
+            if (mentorProfile) resolvedMentorId = mentorProfile.userId;
+          }
+
+          if (String(resolvedMentorId) === String(learner._id)) {
+            httpErr = {
+              status: 400,
+              code: 'SELF_BOOKING_NOT_ALLOWED',
+              message: 'You cannot book a mentorship session with yourself.'
+            };
+            throw new Error('ABORT_TX');
+          }
+
+          // Remove chosen slot from mentor availability if specified
+          if (mentorProfile && chosenDate && chosenSlot) {
+            const entry = mentorProfile.availability.find((a) => a.date === chosenDate);
+            if (entry) {
+              entry.slots = entry.slots.filter((s) => s !== chosenSlot);
+              if (entry.slots.length === 0) {
+                mentorProfile.availability = mentorProfile.availability.filter(
+                  (a) => a.date !== chosenDate
+                );
+              }
+              await mentorProfile.save({ session: dbSession });
+            }
+          }
+
+          learner.credits -= sessionCost;
+          await learner.save({ session: dbSession });
+          remainingCredits = learner.credits;
+
+          const [sessionDoc] = await Session.create(
+            [
+              {
+                learnerId: learner._id,
+                mentorId: resolvedMentorId || learner._id,
+                status: 'PENDING',
+                skillName,
+                domain,
+                scheduledTime: scheduledTime
+                  ? new Date(scheduledTime)
+                  : new Date(Date.now() + 3600000),
+                bookedSlot: { date: chosenDate, slot: chosenSlot },
+                creditsLocked: sessionCost
+              }
+            ],
+            { session: dbSession }
+          );
+          createdSessionDoc = sessionDoc;
+
+          await Transaction.create(
+            [
+              {
+                userId: learner._id,
+                sessionId: sessionDoc._id,
+                type: 'ESCROW_LOCK',
+                amount: -sessionCost,
+                balanceAfter: learner.credits,
+                description: `Locked ${sessionCost} CR in Escrow for ${skillName}`
+              }
+            ],
+            { session: dbSession }
+          );
         });
-      }
-
-      // Remove chosen slot from mentor availability if specified
-      if (mentorProfile && chosenDate && chosenSlot) {
-        const entry = mentorProfile.availability.find((a) => a.date === chosenDate);
-        if (entry) {
-          entry.slots = entry.slots.filter((s) => s !== chosenSlot);
-          if (entry.slots.length === 0) {
-            mentorProfile.availability = mentorProfile.availability.filter((a) => a.date !== chosenDate);
-          }
-          await mentorProfile.save();
+      } catch (txErr) {
+        if (httpErr) {
+          return res.status(httpErr.status).json({
+            success: false,
+            error: {
+              code: httpErr.code,
+              httpStatus: httpErr.status,
+              message: httpErr.message
+            }
+          });
         }
+        throw txErr;
+      } finally {
+        await dbSession.endSession();
       }
-
-      learner.credits -= sessionCost;
-      await learner.save();
-
-      const sessionDoc = await Session.create({
-        learnerId: learner._id,
-        mentorId: resolvedMentorId || learner._id,
-        status: 'PENDING',
-        skillName,
-        domain,
-        scheduledTime: scheduledTime ? new Date(scheduledTime) : new Date(Date.now() + 3600000),
-        bookedSlot: { date: chosenDate, slot: chosenSlot },
-        creditsLocked: sessionCost
-      });
-
-      await Transaction.create({
-        userId: learner._id,
-        sessionId: sessionDoc._id,
-        type: 'ESCROW_LOCK',
-        amount: -sessionCost,
-        balanceAfter: learner.credits,
-        description: `Locked ${sessionCost} CR in Escrow for ${skillName}`
-      });
 
       const io = req.app.get('io');
       const userSockets = req.app.get('userSockets');
       if (io && userSockets && userSockets.has(String(resolvedMentorId))) {
-        const learnerProfile = await UserProfile.findOne({ userId: learner._id });
+        const learnerProfile = await UserProfile.findOne({ userId: createdSessionDoc.learnerId });
         io.to(userSockets.get(String(resolvedMentorId))).emit('session-request', {
-          sessionId: String(sessionDoc._id),
-          learnerName: learnerProfile ? learnerProfile.displayName : learner.email,
+          sessionId: String(createdSessionDoc._id),
+          learnerName: learnerProfile ? learnerProfile.displayName : 'Learner',
           skillName
         });
       }
@@ -140,15 +300,15 @@ const bookSession = async (req, res, next) => {
         success: true,
         message: 'Session booked successfully. 50 Credits locked in Escrow.',
         session: {
-          _id: String(sessionDoc._id),
-          status: sessionDoc.status,
-          skillName: sessionDoc.skillName,
-          domain: sessionDoc.domain,
-          mentorId: String(sessionDoc.mentorId),
-          learnerId: String(sessionDoc.learnerId),
-          bookedSlot: sessionDoc.bookedSlot,
-          creditsLocked: sessionDoc.creditsLocked,
-          learnerWalletRemaining: learner.credits
+          _id: String(createdSessionDoc._id),
+          status: createdSessionDoc.status,
+          skillName: createdSessionDoc.skillName,
+          domain: createdSessionDoc.domain,
+          mentorId: String(createdSessionDoc.mentorId),
+          learnerId: String(createdSessionDoc.learnerId),
+          bookedSlot: createdSessionDoc.bookedSlot,
+          creditsLocked: createdSessionDoc.creditsLocked,
+          learnerWalletRemaining: remainingCredits
         }
       });
     }
@@ -273,6 +433,7 @@ const bookSession = async (req, res, next) => {
 // Feature #29: GET /api/sessions/active
 const getActiveSessions = async (req, res, next) => {
   try {
+    await sweepExpiredPendingSessions();
     const userId = req.user.userId;
     const isAdmin = req.user.role === 'ADMIN';
 
@@ -324,6 +485,7 @@ const getActiveSessions = async (req, res, next) => {
 // Feature #30: GET /api/sessions/history
 const getSessionHistory = async (req, res, next) => {
   try {
+    await sweepExpiredPendingSessions();
     const userId = req.user.userId;
     const isAdmin = req.user.role === 'ADMIN';
 
@@ -522,7 +684,7 @@ const updateMeetingLink = async (req, res, next) => {
   }
 };
 
-// Feature #34, #37, #39: POST /api/sessions/:id/complete (Learner Marks as Learnt -> 90/10 Split)
+// Feature #34, #37, #39: POST /api/sessions/:id/complete (with Mongoose Multi-Document ACID Transaction)
 const completeSession = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -530,80 +692,119 @@ const completeSession = async (req, res, next) => {
     const { rating = 5, comment = '' } = req.body || {};
 
     if (isMongoConnected()) {
-      const session = await Session.findById(id);
-      if (!session) {
-        return res.status(404).json({
-          success: false,
-          error: { code: 'SESSION_NOT_FOUND', httpStatus: 404, message: 'Session not found.' }
+      const dbSession = await mongoose.startSession();
+      let settlementPayload = null;
+      let httpErr = null;
+
+      try {
+        await dbSession.withTransaction(async () => {
+          const session = await Session.findById(id).session(dbSession);
+          if (!session) {
+            httpErr = {
+              status: 404,
+              code: 'SESSION_NOT_FOUND',
+              message: 'Session not found.'
+            };
+            throw new Error('ABORT_TX');
+          }
+
+          const isMentor = String(session.mentorId) === String(actorId);
+          const isLearner = String(session.learnerId) === String(actorId);
+          const check = validateStateTransition(
+            session.status,
+            'COMPLETED',
+            req.user.role,
+            isMentor,
+            isLearner
+          );
+          if (!check.valid) {
+            httpErr = {
+              status: check.status,
+              code: check.code,
+              message: check.message
+            };
+            throw new Error('ABORT_TX');
+          }
+
+          const { mentorCredited, platformBurned } = calculateEscrowSplit(session.creditsLocked);
+          const mentor = await User.findById(session.mentorId).session(dbSession);
+          if (mentor) {
+            mentor.credits += mentorCredited;
+            await mentor.save({ session: dbSession });
+          }
+
+          const mentorProfile = await UserProfile.findOne({ userId: session.mentorId }).session(
+            dbSession
+          );
+          if (mentorProfile) {
+            const prevTotal = mentorProfile.totalSessions || 0;
+            const prevRating = mentorProfile.rating || 5.0;
+            const numRating = Math.min(5, Math.max(1, Number(rating) || 5));
+            mentorProfile.totalSessions = prevTotal + 1;
+            mentorProfile.rating = Number(
+              ((prevRating * prevTotal + numRating) / (prevTotal + 1)).toFixed(1)
+            );
+            await mentorProfile.save({ session: dbSession });
+          }
+
+          session.status = 'COMPLETED';
+          session.completedAt = new Date();
+          session.feedback = {
+            rating: Math.min(5, Math.max(1, Number(rating) || 5)),
+            comment: String(comment).slice(0, 400),
+            submittedAt: new Date()
+          };
+          await session.save({ session: dbSession });
+
+          await Transaction.create(
+            [
+              {
+                userId: session.mentorId,
+                sessionId: session._id,
+                type: 'RELEASE',
+                amount: mentorCredited,
+                balanceAfter: mentor ? mentor.credits : null,
+                description: `Escrow Release (+${mentorCredited} CR) for teaching ${session.skillName}`
+              },
+              {
+                userId: session.learnerId,
+                sessionId: session._id,
+                type: 'BURN',
+                amount: -platformBurned,
+                balanceAfter: null,
+                description: `10% Platform Deflationary Burn (-${platformBurned} CR) for ${session.skillName}`
+              }
+            ],
+            { session: dbSession }
+          );
+
+          settlementPayload = {
+            sessionId: String(session._id),
+            newStatus: 'COMPLETED',
+            mentorCredited,
+            platformBurned
+          };
         });
-      }
-
-      const isMentor = String(session.mentorId) === String(actorId);
-      const isLearner = String(session.learnerId) === String(actorId);
-      const check = validateStateTransition(session.status, 'COMPLETED', req.user.role, isMentor, isLearner);
-      if (!check.valid) {
-        return res.status(check.status).json({
-          success: false,
-          error: { code: check.code, httpStatus: check.status, message: check.message }
-        });
-      }
-
-      const { mentorCredited, platformBurned } = calculateEscrowSplit(session.creditsLocked);
-      const mentor = await User.findById(session.mentorId);
-      if (mentor) {
-        mentor.credits += mentorCredited;
-        await mentor.save();
-      }
-
-      const mentorProfile = await UserProfile.findOne({ userId: session.mentorId });
-      if (mentorProfile) {
-        const prevTotal = mentorProfile.totalSessions || 0;
-        const prevRating = mentorProfile.rating || 5.0;
-        const numRating = Math.min(5, Math.max(1, Number(rating) || 5));
-        mentorProfile.totalSessions = prevTotal + 1;
-        mentorProfile.rating = Number(
-          ((prevRating * prevTotal + numRating) / (prevTotal + 1)).toFixed(1)
-        );
-        await mentorProfile.save();
-      }
-
-      session.status = 'COMPLETED';
-      session.completedAt = new Date();
-      session.feedback = {
-        rating: Math.min(5, Math.max(1, Number(rating) || 5)),
-        comment: String(comment).slice(0, 400),
-        submittedAt: new Date()
-      };
-      await session.save();
-
-      await Transaction.create([
-        {
-          userId: session.mentorId,
-          sessionId: session._id,
-          type: 'RELEASE',
-          amount: mentorCredited,
-          balanceAfter: mentor ? mentor.credits : null,
-          description: `Escrow Release (+${mentorCredited} CR) for teaching ${session.skillName}`
-        },
-        {
-          userId: session.learnerId,
-          sessionId: session._id,
-          type: 'BURN',
-          amount: -platformBurned,
-          balanceAfter: null,
-          description: `10% Platform Deflationary Burn (-${platformBurned} CR) for ${session.skillName}`
+      } catch (txErr) {
+        if (httpErr) {
+          return res.status(httpErr.status).json({
+            success: false,
+            error: {
+              code: httpErr.code,
+              httpStatus: httpErr.status,
+              message: httpErr.message
+            }
+          });
         }
-      ]);
+        throw txErr;
+      } finally {
+        await dbSession.endSession();
+      }
 
       return res.status(200).json({
         success: true,
-        message: `Session completed! ${mentorCredited} Credits released to Mentor, ${platformBurned} Credits burned.`,
-        settlement: {
-          sessionId: String(session._id),
-          newStatus: 'COMPLETED',
-          mentorCredited,
-          platformBurned
-        }
+        message: `Session completed! ${settlementPayload.mentorCredited} Credits released to Mentor, ${settlementPayload.platformBurned} Credits burned.`,
+        settlement: settlementPayload
       });
     }
 
@@ -764,69 +965,110 @@ const disputeSession = async (req, res, next) => {
   }
 };
 
-// Feature #36: POST /api/sessions/:id/cancel (Cancel Pending Session & Refund 50 CR)
+// Feature #36: POST /api/sessions/:id/cancel (with Mongoose Multi-Document ACID Transaction)
 const cancelSession = async (req, res, next) => {
   try {
     const { id } = req.params;
     const actorId = req.user.userId;
 
     if (isMongoConnected()) {
-      const session = await Session.findById(id);
-      if (!session) {
-        return res.status(404).json({
-          success: false,
-          error: { code: 'SESSION_NOT_FOUND', httpStatus: 404, message: 'Session not found.' }
-        });
-      }
+      const dbSession = await mongoose.startSession();
+      let updatedSessionDoc = null;
+      let httpErr = null;
 
-      const isMentor = String(session.mentorId) === String(actorId);
-      const isLearner = String(session.learnerId) === String(actorId);
-      const check = validateStateTransition(session.status, 'CANCELLED', req.user.role, isMentor, isLearner);
-      if (!check.valid) {
-        return res.status(check.status).json({
-          success: false,
-          error: { code: check.code, httpStatus: check.status, message: check.message }
-        });
-      }
-
-      session.status = 'CANCELLED';
-      await session.save();
-
-      // Restore booked slot to mentor availability if present
-      if (session.bookedSlot?.date && session.bookedSlot?.slot) {
-        const mp = await UserProfile.findOne({ userId: session.mentorId });
-        if (mp) {
-          const entry = mp.availability.find((a) => a.date === session.bookedSlot.date);
-          if (entry) {
-            if (!entry.slots.includes(session.bookedSlot.slot)) {
-              entry.slots.push(session.bookedSlot.slot);
-            }
-          } else {
-            mp.availability.push({ date: session.bookedSlot.date, slots: [session.bookedSlot.slot] });
+      try {
+        await dbSession.withTransaction(async () => {
+          const session = await Session.findById(id).session(dbSession);
+          if (!session) {
+            httpErr = {
+              status: 404,
+              code: 'SESSION_NOT_FOUND',
+              message: 'Session not found.'
+            };
+            throw new Error('ABORT_TX');
           }
-          await mp.save();
+
+          const isMentor = String(session.mentorId) === String(actorId);
+          const isLearner = String(session.learnerId) === String(actorId);
+          const check = validateStateTransition(
+            session.status,
+            'CANCELLED',
+            req.user.role,
+            isMentor,
+            isLearner
+          );
+          if (!check.valid) {
+            httpErr = {
+              status: check.status,
+              code: check.code,
+              message: check.message
+            };
+            throw new Error('ABORT_TX');
+          }
+
+          session.status = 'CANCELLED';
+          await session.save({ session: dbSession });
+          updatedSessionDoc = session;
+
+          // Restore booked slot to mentor availability if present
+          if (session.bookedSlot?.date && session.bookedSlot?.slot) {
+            const mp = await UserProfile.findOne({ userId: session.mentorId }).session(dbSession);
+            if (mp) {
+              const entry = mp.availability.find((a) => a.date === session.bookedSlot.date);
+              if (entry) {
+                if (!entry.slots.includes(session.bookedSlot.slot)) {
+                  entry.slots.push(session.bookedSlot.slot);
+                }
+              } else {
+                mp.availability.push({
+                  date: session.bookedSlot.date,
+                  slots: [session.bookedSlot.slot]
+                });
+              }
+              await mp.save({ session: dbSession });
+            }
+          }
+
+          const learner = await User.findById(session.learnerId).session(dbSession);
+          if (learner) {
+            learner.credits += session.creditsLocked;
+            await learner.save({ session: dbSession });
+          }
+
+          await Transaction.create(
+            [
+              {
+                userId: session.learnerId,
+                sessionId: session._id,
+                type: 'REFUND',
+                amount: session.creditsLocked,
+                balanceAfter: learner ? learner.credits : null,
+                description: `Escrow Refund (+${session.creditsLocked} CR) for cancelled session: ${session.skillName}`
+              }
+            ],
+            { session: dbSession }
+          );
+        });
+      } catch (txErr) {
+        if (httpErr) {
+          return res.status(httpErr.status).json({
+            success: false,
+            error: {
+              code: httpErr.code,
+              httpStatus: httpErr.status,
+              message: httpErr.message
+            }
+          });
         }
+        throw txErr;
+      } finally {
+        await dbSession.endSession();
       }
-
-      const learner = await User.findById(session.learnerId);
-      if (learner) {
-        learner.credits += session.creditsLocked;
-        await learner.save();
-      }
-
-      await Transaction.create({
-        userId: session.learnerId,
-        sessionId: session._id,
-        type: 'REFUND',
-        amount: session.creditsLocked,
-        balanceAfter: learner ? learner.credits : null,
-        description: `Escrow Refund (+${session.creditsLocked} CR) for cancelled session: ${session.skillName}`
-      });
 
       return res.status(200).json({
         success: true,
         message: 'Session cancelled and 50 Credits refunded to Learner.',
-        session
+        session: updatedSessionDoc
       });
     }
 
@@ -1062,5 +1304,6 @@ module.exports = {
   cancelSession,
   submitFeedback,
   getSessionChat,
-  sendSessionChat
+  sendSessionChat,
+  sweepExpiredPendingSessions
 };

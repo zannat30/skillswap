@@ -448,14 +448,71 @@ const getMentorReviews = async (req, res, next) => {
   }
 };
 
-// Features #24, #25, #26: GET /api/marketplace
+const escapeRegex = (str = '') => String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// Features #24, #25, #26: GET /api/marketplace (MongoDB $text + $regex search, no pagination limit)
 const getMarketplace = async (req, res, next) => {
   try {
-    const { domain, category, search, page = 1, limit = 50 } = req.query;
+    const { domain, category, search } = req.query;
     const filterVal = String(domain || category || 'all').toLowerCase().trim();
-    const searchVal = String(search || '').toLowerCase().trim();
+    const searchVal = String(search || '').trim();
     const currentUserId = req.user ? String(req.user.userId) : null;
 
+    if (isMongoConnected()) {
+      const bannedDocs = await User.find({ isBanned: true }).select('_id');
+      const excludedIds = bannedDocs.map((u) => u._id);
+      if (currentUserId && /^[a-f\d]{24}$/i.test(currentUserId)) {
+        excludedIds.push(currentUserId);
+      }
+
+      const baseFilter = {
+        userId: { $nin: excludedIds },
+        'skillsHave.0': { $exists: true }
+      };
+
+      if (filterVal !== 'all') {
+        baseFilter['skillsHave.domain'] = normalizeDomain(filterVal);
+      }
+
+      let docs = [];
+      if (searchVal) {
+        // 1. Primary MongoDB Compound $text Index Search (readme.md Section 11.2)
+        try {
+          docs = await UserProfile.find(
+            { ...baseFilter, $text: { $search: searchVal } },
+            { score: { $meta: 'textScore' } }
+          ).sort({ score: { $meta: 'textScore' }, rating: -1, totalSessions: -1 });
+        } catch (_) {
+          docs = [];
+        }
+
+        // 2. Fallback to MongoDB $regex query for partial prefix typing (e.g. "Reac")
+        if (docs.length === 0) {
+          const rx = new RegExp(escapeRegex(searchVal), 'i');
+          docs = await UserProfile.find({
+            ...baseFilter,
+            $or: [
+              { displayName: rx },
+              { bio: rx },
+              { 'skillsHave.skill': rx },
+              { 'skillsHave.domain': rx },
+              { 'skillsWant.skill': rx }
+            ]
+          }).sort({ rating: -1, totalSessions: -1 });
+        }
+      } else {
+        docs = await UserProfile.find(baseFilter).sort({ rating: -1, totalSessions: -1 });
+      }
+
+      const mentors = docs.map(plain).map(toMentorCard);
+      return res.status(200).json({
+        success: true,
+        total: mentors.length,
+        mentors
+      });
+    }
+
+    // In-Memory Store path
     const bannedIds = await getBannedIds();
     let profiles = (await getAllProfiles()).filter(
       (p) =>
@@ -470,27 +527,24 @@ const getMarketplace = async (req, res, next) => {
     }
 
     if (searchVal) {
+      const lowerSearch = searchVal.toLowerCase();
       profiles = profiles.filter(
         (p) =>
-          p.displayName.toLowerCase().includes(searchVal) ||
+          p.displayName.toLowerCase().includes(lowerSearch) ||
+          (p.bio || '').toLowerCase().includes(lowerSearch) ||
           p.skillsHave.some(
-            (s) => s.skill.toLowerCase().includes(searchVal) || s.domain.toLowerCase().includes(searchVal)
+            (s) => s.skill.toLowerCase().includes(lowerSearch) || s.domain.toLowerCase().includes(lowerSearch)
           ) ||
-          (p.skillsWant || []).some((s) => s.skill.toLowerCase().includes(searchVal))
+          (p.skillsWant || []).some((s) => s.skill.toLowerCase().includes(lowerSearch))
       );
     }
 
     profiles.sort((a, b) => b.rating - a.rating || b.totalSessions - a.totalSessions);
 
-    const pageNum = Math.max(1, Number(page) || 1);
-    const pageSize = Math.min(100, Math.max(1, Number(limit) || 50));
-    const paged = profiles.slice((pageNum - 1) * pageSize, pageNum * pageSize);
-
     return res.status(200).json({
       success: true,
       total: profiles.length,
-      page: pageNum,
-      mentors: paged.map(toMentorCard)
+      mentors: profiles.map(toMentorCard)
     });
   } catch (err) {
     next(err);

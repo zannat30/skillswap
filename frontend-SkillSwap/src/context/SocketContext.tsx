@@ -24,18 +24,37 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const [socketToast, setSocketToast] = useState<string | null>(null);
 
   useEffect(() => {
+    const token =
+      typeof window !== 'undefined' ? localStorage.getItem('skillswap_token') : null;
+
     const socketInstance = io(SOCKET_SERVER_URL, {
       transports: ['websocket', 'polling'],
       autoConnect: true,
-      reconnectionAttempts: 5
+      reconnectionAttempts: 5,
+      auth: {
+        token,
+        userId: user?._id || null
+      }
     });
 
     socketInstance.on('connect', () => {
       setIsConnected(true);
       if (user?._id) {
-        socketInstance.emit('register-user-socket', { userId: user._id });
+        socketInstance.emit('register-user-socket', {
+          userId: user._id,
+          token
+        });
       }
     });
+
+    socketInstance.on(
+      'socket-error',
+      (payload: { code?: string; message?: string }) => {
+        if (payload?.message) {
+          setSocketToast(`⚠️ ${payload.message}`);
+        }
+      }
+    );
 
     // Real-time Mentor Booking Notification (Section 13: session-request)
     socketInstance.on(
