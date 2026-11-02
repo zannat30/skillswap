@@ -79,14 +79,14 @@ Self-directed learners, university computer science students, and junior enginee
 
 ## 3. Deep-Dive Technology Stack & Justification
 
-### 3.1 Frontend Presentation Tier (`skillswap-frontend`)
+### 3.1 Frontend Presentation Tier (`frontend-SkillSwap`)
 * **Framework:** **Next.js (Latest App Router)** — Provides React Server Components (RSC), optimized client-side routing, and fast page transitions across the Marketplace and Active Session rooms.
 * **Language:** **TypeScript (`v5.x`)** — Enforces compile-time static type checking across API payloads, Socket event contracts, and user profile models.
 * **Styling Engine:** **Tailwind CSS (`v3.4+`)** — Utility-first CSS framework enabling a custom, high-contrast dark-mode UI (`#0B0F19` slate palette with `#10B981` emerald accents).
 * **Component Primitives:** **ShadCN UI & Radix UI** — Accessible, unstyled WAI-ARIA compliant modals, dropdowns, toast alerts, and feedback dialogs.
 * **Real-Time Client:** **Socket.io-Client (`v4.7+`)** — Manages persistent WebSocket connections, automatic reconnection strategies, and room-level event listeners.
 
-### 3.2 Backend Logic & API Tier (`skillswap-backend`)
+### 3.2 Backend Logic & API Tier (`backend-SkillSwap`)
 * **Runtime Environment:** **Node.js (`v18.x / v20.x LTS`)** — Event-driven, non-blocking I/O architecture capable of handling thousands of concurrent WebSocket ticks and asynchronous AI streaming requests.
 * **Web Framework:** **Express.js (`v4.19+`)** — Lightweight RESTful routing framework structured around the Controller-Service-Model design pattern.
 * **Authentication & Cryptography:** **JSON Web Tokens (`jsonwebtoken`) & `bcryptjs`** — Stateless bearer token authorization paired with 10-round salted blowfish password hashing.
@@ -147,7 +147,7 @@ SkillSwap enforces a **strict physical decoupling** between the presentation cli
 ```text
 skillswap-workspace/
 │
-├── skillswap-frontend/                         # REPOSITORY 1: Next.js Client Application
+├── frontend-SkillSwap/                         # REPOSITORY 1: Next.js Client Application
 │   ├── public/
 │   │   └── assets/                             # Static brand icons, badges, sounds
 │   ├── src/
@@ -185,7 +185,7 @@ skillswap-workspace/
 │   ├── tsconfig.json
 │   └── package.json
 │
-└── skillswap-backend/                          # REPOSITORY 2: Standalone Express API Server
+└── backend-SkillSwap/                          # REPOSITORY 2: Standalone Express API Server
     ├── src/
     │   ├── config/
     │   │   ├── db.js                           # MongoDB Atlas Connection Pool Setup
@@ -966,10 +966,10 @@ git clone https://github.com/your-username/skillswap.git
 cd skillswap
 ```
 
-### 15.3 Step 2: Configure & Launch the Backend (`skillswap-backend`)
+### 15.3 Step 2: Configure & Launch the Backend (`backend-SkillSwap`)
 1. Navigate into the backend directory:
    ```bash
-   cd skillswap-backend
+   cd backend-SkillSwap
    ```
 2. Install all Node.js dependencies:
    ```bash
@@ -995,10 +995,10 @@ cd skillswap
    [MongoDB Atlas]    ✅ Connected successfully to cluster0.mongodb.net/skillswap
    ```
 
-### 15.4 Step 3: Configure & Launch the Frontend (`skillswap-frontend`)
+### 15.4 Step 3: Configure & Launch the Frontend (`frontend-SkillSwap`)
 1. Open a **second terminal window** and navigate to the frontend directory:
    ```bash
-   cd skillswap-frontend
+   cd frontend-SkillSwap
    ```
 2. Install all Next.js and UI dependencies:
    ```bash
@@ -1057,13 +1057,13 @@ SkillSwap uses the official Google Gemini API to power the 24/7 **SkillBot AI**.
 2. Click **Get API Key** in the left navigation sidebar.
 3. Click **Create API key in new project**.
 4. Copy the generated key (starts with `AIzaSy...`).
-5. Paste the key into `skillswap-backend/.env` as `GEMINI_API_KEY=AIzaSy...`.
+5. Paste the key into `backend-SkillSwap/.env` as `GEMINI_API_KEY=AIzaSy...`.
 
 ---
 
 ## 18. Exhaustive Environment Variables Reference (`.env`)
 
-### 18.1 Backend Configuration (`skillswap-backend/.env`)
+### 18.1 Backend Configuration (`backend-SkillSwap/.env`)
 
 ```ini
 # ============================================================================
@@ -1104,7 +1104,7 @@ GEMINI_API_KEY=AIzaSyD-ReplaceWithYourActualGoogleAIStudioKey
 GEMINI_MODEL_NAME=gemini-2.5-flash
 ```
 
-### 18.2 Frontend Configuration (`skillswap-frontend/.env.local`)
+### 18.2 Frontend Configuration (`frontend-SkillSwap/.env.local`)
 
 ```ini
 # ============================================================================
@@ -1124,7 +1124,7 @@ SkillSwap includes automated unit and integration test suites using **Jest** and
 
 ### Running Automated Tests
 ```bash
-cd skillswap-backend
+cd backend-SkillSwap
 npm test
 ```
 
@@ -1151,7 +1151,7 @@ npm test
 | `401` | `TOKEN_EXPIRED_OR_MISSING` | Missing or expired JWT Bearer token | Log out and log back in to obtain a fresh 7-day JWT. |
 | `403` | `FORBIDDEN_DOMAIN` | Skill or booking contains prohibited academic fraud/illegal terms | Restrict topics to Technology, Creative Arts, Languages, or core Academics. |
 | `403` | `ACCOUNT_BANNED` | User has `isBanned: true` set by an Administrator | Contact platform administrator for moderation review. |
-| `503` | `AI_SERVICE_UNAVAILABLE` | Invalid `GEMINI_API_KEY` or quota exceeded | Verify your Google AI Studio API key in `skillswap-backend/.env`. |
+| `503` | `AI_SERVICE_UNAVAILABLE` | Invalid `GEMINI_API_KEY` or quota exceeded | Verify your Google AI Studio API key in `backend-SkillSwap/.env`. |
 
 ---
 

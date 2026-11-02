@@ -1,0 +1,39 @@
+{
+  "name": "backend-SkillSwap",
+  "version": "1.0.0",
+  "description": "SkillSwap Standalone Express API & Socket.io Server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "seed": "node src/utils/seed.js",
+    "test": "node tests/runTests.js"
+  },
+  "keywords": [
+    "skillswap",
+    "escrow",
+    "mentorship",
+    "socket.io",
+    "gemini-ai",
+    "mongodb"
+  ],
+  "author": "Zannatuz Zubaida Mim & Ahmmed Fahim Bin Hossain",
+  "license": "MIT",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.2",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.11.4",
+    "socket.io": "^4.8.4"
+  },
+  "devDependencies": {
+    "jest": "^30.5.2",
+    "nodemon": "^3.1.14",
+    "supertest": "^7.3.1"
+  }
+}
