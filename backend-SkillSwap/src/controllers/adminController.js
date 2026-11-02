@@ -255,7 +255,7 @@ const rejectDisputeReleaseToMentor = async (req, res, next) => {
                 description: `Admin Dispute Ruling: -${platformBurned} CR Deflationary Burn`
               }
             ],
-            { session: dbSession }
+            { session: dbSession, ordered: true }
           );
 
           settlementPayload = {

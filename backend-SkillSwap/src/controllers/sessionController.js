@@ -787,7 +787,7 @@ const completeSession = async (req, res, next) => {
                 description: `10% Platform Deflationary Burn (-${platformBurned} CR) for ${session.skillName}`
               }
             ],
-            { session: dbSession }
+            { session: dbSession, ordered: true }
           );
 
           settlementPayload = {

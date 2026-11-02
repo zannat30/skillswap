@@ -3,15 +3,20 @@ const { isMongoConnected } = require('../config/db');
 const { getStore } = require('../config/memoryStore');
 const { getGeminiModel } = require('../config/gemini');
 
-const matchInternalMentors = async (queryText = '') => {
+const matchInternalMentors = async (queryText = '', excludeUserId = null) => {
   const q = String(queryText).toLowerCase();
+  const excludedIds = new Set(['664f1a2b3c4d5e6f7a8b9c07']);
+  if (excludeUserId) {
+    excludedIds.add(String(excludeUserId));
+  }
 
   let profiles = [];
   if (isMongoConnected()) {
-    profiles = await UserProfile.find({ 'skillsHave.0': { $exists: true } }).limit(10);
+    const allProfiles = await UserProfile.find({ 'skillsHave.0': { $exists: true } }).limit(20);
+    profiles = allProfiles.filter((p) => !excludedIds.has(String(p.userId)));
   } else {
     profiles = getStore().userProfiles.filter(
-      (p) => String(p.userId) !== '664f1a2b3c4d5e6f7a8b9c01' && p.skillsHave?.length > 0
+      (p) => !excludedIds.has(String(p.userId)) && p.skillsHave?.length > 0
     );
   }
 
@@ -40,13 +45,16 @@ const matchInternalMentors = async (queryText = '') => {
   });
 };
 
-const buildSmartFallbackAnswer = (question = '') => {
+const buildSmartFallbackAnswer = (question = '', suggestedMentors = []) => {
   const q = String(question).trim();
   const lower = q.toLowerCase();
+  const mentorLabel = suggestedMentors?.[0]?.displayName
+    ? `**${suggestedMentors[0].displayName}**`
+    : 'a verified peer mentor';
 
   if (lower.includes('useeffect') || lower.includes('react')) {
     return {
-      answer: `In React 18+, \`React.StrictMode\` intentionally double-invokes effects in development to help detect side-effect cleanup bugs.\n\n### 4-Week React Mastery Roadmap\n1. **Week 1:** JSX, Props, Component Lifecycle & StrictMode Cleanup.\n2. **Week 2:** Custom Hooks (\`useEffect\`, \`useMemo\`, \`useCallback\`) & State Architecture.\n3. **Week 3:** Next.js App Router, Server Components & Data Fetching.\n4. **Week 4:** Book a 50 CR 1-on-1 session with **Alex Rivera** on our Marketplace for live code review!`,
+      answer: `In React 18+, \`React.StrictMode\` intentionally double-invokes effects in development to help detect side-effect cleanup bugs.\n\n### 4-Week React Mastery Roadmap\n1. **Week 1:** JSX, Props, Component Lifecycle & StrictMode Cleanup.\n2. **Week 2:** Custom Hooks (\`useEffect\`, \`useMemo\`, \`useCallback\`) & State Architecture.\n3. **Week 3:** Next.js App Router, Server Components & Data Fetching.\n4. **Week 4:** Book a 50 CR 1-on-1 session with ${mentorLabel} on our Marketplace for live code review!`,
       steps: [
         'Understand the core fundamentals & React 18 StrictMode lifecycle.',
         'Build a small practical project with proper useEffect cleanup functions.',
@@ -82,7 +90,7 @@ const askSkillBot = async (req, res, next) => {
       });
     }
 
-    const suggestedMentors = await matchInternalMentors(queryText);
+    const suggestedMentors = await matchInternalMentors(queryText, req.user?.userId);
     const model = getGeminiModel();
 
     if (model) {
@@ -104,7 +112,7 @@ const askSkillBot = async (req, res, next) => {
       }
     }
 
-    const fallback = buildSmartFallbackAnswer(queryText);
+    const fallback = buildSmartFallbackAnswer(queryText, suggestedMentors);
 
     return res.status(200).json({
       success: true,
@@ -123,7 +131,7 @@ const generateRoadmap = async (req, res, next) => {
     const { topic, skill } = req.body || {};
     const targetSkill = (topic || skill || 'Full-Stack Engineering').trim();
 
-    const suggestedMentors = await matchInternalMentors(targetSkill);
+    const suggestedMentors = await matchInternalMentors(targetSkill, req.user?.userId);
     const model = getGeminiModel();
 
     if (model) {
