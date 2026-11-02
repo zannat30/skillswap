@@ -5,6 +5,17 @@ import { Flame, Medal, BookOpen, Check, AlertTriangle } from 'lucide-react';
 import { LeaderboardMentor, LeaderboardLearner } from '@/types';
 import { apiRequest } from '@/lib/apiClient';
 import { useAuth } from '@/context/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent
+} from '@/components/ui/card';
 
 export default function LeaderboardPage() {
   const { profile, refreshProfile } = useAuth();
@@ -58,162 +69,152 @@ export default function LeaderboardPage() {
   return (
     <>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold">Leaderboard &amp; Gamification</h2>
+        <Badge variant="amber" style={{ marginBottom: '8px' }}>
+          <Flame size={12} /> Gamification &amp; Community Rankings
+        </Badge>
+        <h2 className="text-2xl font-bold">Leaderboard &amp; Daily Streak</h2>
         <p className="text-secondary mt-1">
-          Track your progress and compete with other mentors.
+          Track your progress and compete with verified peer mentors and learners.
         </p>
       </div>
 
       {statusBanner && (
-        <div
-          className="glass-panel mb-6"
-          style={{
-            padding: '12px 16px',
-            borderRadius: '12px',
-            borderColor:
-              statusBanner.type === 'error'
-                ? 'var(--accent-amber)'
-                : 'var(--accent-emerald)',
-            color:
-              statusBanner.type === 'error'
-                ? 'var(--accent-amber)'
-                : 'var(--accent-emerald)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontWeight: 600,
-            fontSize: '0.88rem'
-          }}
+        <Alert
+          variant={statusBanner.type === 'error' ? 'amber' : 'emerald'}
+          className="mb-6"
         >
-          {statusBanner.type === 'error' ? (
-            <AlertTriangle size={16} />
-          ) : (
-            <Check size={16} />
-          )}
-          <span>{statusBanner.text}</span>
-        </div>
+          <div className="flex items-center gap-2">
+            {statusBanner.type === 'error' ? (
+              <AlertTriangle size={16} />
+            ) : (
+              <Check size={16} />
+            )}
+            <AlertDescription>{statusBanner.text}</AlertDescription>
+          </div>
+        </Alert>
       )}
 
-      {/* Daily Streak */}
-      <div className="glass-card streak-card p-6 mb-6 border-radius-16">
+      {/* Daily Streak Card (shadcn/ui Card) */}
+      <Card
+        className="mb-6"
+        style={{
+          padding: '24px',
+          background:
+            'linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(12, 12, 15, 0.95))',
+          borderColor: 'rgba(245, 158, 11, 0.35)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '16px'
+        }}
+      >
         <div className="flex items-center gap-4">
-          <Flame
-            className="flame-icon"
-            style={{ width: '48px', height: '48px' }}
-          />
+          <Flame className="flame-icon" style={{ width: '44px', height: '44px' }} />
           <div>
-            <h3 className="text-xl font-bold text-white">
+            <h3 className="text-xl font-bold">
               {profile.streakCount || 7} Day Learning Streak!
             </h3>
-            <p className="text-amber mt-1">
+            <p className="text-amber text-sm mt-1">
               {profile.streakBonusEligible
                 ? 'You unlocked a +20 Credit bonus today!'
                 : '7-Day Streak Milestone Reward (+20 CR per 7-day cycle)'}
             </p>
           </div>
         </div>
-        <button
-          className="btn btn-primary"
-          style={{
-            backgroundColor: 'var(--accent-amber)',
-            boxShadow: '0 0 15px rgba(245,158,11,0.4)'
-          }}
-          onClick={handleClaimReward}
-          type="button"
-        >
+        <Button variant="default" onClick={handleClaimReward}>
           {profile.streakBonusEligible
             ? 'Claim Reward (+20 CR)'
             : 'Reward Claimed (+20 CR)'}
-        </button>
-      </div>
+        </Button>
+      </Card>
 
       <div className="leaderboard-grid">
         {/* Top Mentors */}
-        <div className="glass-panel p-6 border-radius-16">
-          <div className="flex items-center gap-2 mb-2">
-            <Medal className="text-emerald" size={20} />
-            <h3 className="text-lg font-bold">Top Mentors</h3>
-          </div>
-          <p className="text-xs text-secondary mb-4">
-            Ranked by total sessions taught.
-          </p>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Medal className="text-emerald" size={20} />
+              <CardTitle>Top Mentors</CardTitle>
+            </div>
+            <CardDescription>Ranked by total 60-minute sessions taught.</CardDescription>
+          </CardHeader>
 
-          <div className="rank-list">
-            {mentors.length === 0 ? (
-              <p className="text-secondary text-sm">
-                No mentors ranked yet. Add teaching skills and complete sessions to appear here!
-              </p>
-            ) : (
-              mentors.map((mentor) => (
-                <div
-                  key={mentor.userId}
-                  className={`rank-item rank-${mentor.rank}`}
-                >
-                  <div className="rank-number">#{mentor.rank}</div>
-                  <div className="avatar-sm mr-3">{mentor.initials}</div>
-                  <div className="flex-1 ml-3">
-                    <h4 className="font-bold">{mentor.displayName}</h4>
-                    <p className="text-xs text-secondary">{mentor.domain}</p>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold text-emerald">
-                      {mentor.sessions}
+          <CardContent>
+            <div className="rank-list" style={{ marginTop: 0 }}>
+              {mentors.length === 0 ? (
+                <p className="text-secondary text-sm">
+                  No mentors ranked yet. Add teaching skills and complete sessions to appear here!
+                </p>
+              ) : (
+                mentors.map((mentor) => (
+                  <div
+                    key={mentor.userId}
+                    className={`rank-item rank-${mentor.rank}`}
+                    style={{ background: '#09090b', borderColor: 'var(--shadcn-border)' }}
+                  >
+                    <div className="rank-number">#{mentor.rank}</div>
+                    <Avatar className="mr-3">
+                      <AvatarFallback>{mentor.initials}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 ml-3">
+                      <h4 className="font-bold text-sm">{mentor.displayName}</h4>
+                      <p className="text-xs text-secondary">{mentor.domain}</p>
                     </div>
-                    <div className="text-xs text-secondary">Sessions</div>
+                    <div className="text-right">
+                      <Badge variant="emerald">{mentor.sessions} Sessions</Badge>
+                    </div>
                   </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Top Learners */}
-        <div className="glass-panel p-6 border-radius-16">
-          <div className="flex items-center gap-2 mb-2">
-            <BookOpen className="text-cyan" size={20} />
-            <h3 className="text-lg font-bold">Top Learners</h3>
-          </div>
-          <p className="text-xs text-secondary mb-4">
-            Ranked by new skills acquired.
-          </p>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <BookOpen className="text-cyan" size={20} />
+              <CardTitle>Top Learners</CardTitle>
+            </div>
+            <CardDescription>Ranked by new skills acquired on SkillSwap.</CardDescription>
+          </CardHeader>
 
-          <div className="rank-list">
-            {learners.length === 0 ? (
-              <p className="text-secondary text-sm">
-                No learners ranked yet. Complete sessions to climb the leaderboard!
-              </p>
-            ) : (
-              learners.map((learner) => (
-                <div
-                  key={learner.userId}
-                  className={`rank-item rank-${learner.rank}`}
-                >
-                  <div className="rank-number">#{learner.rank}</div>
+          <CardContent>
+            <div className="rank-list" style={{ marginTop: 0 }}>
+              {learners.length === 0 ? (
+                <p className="text-secondary text-sm">
+                  No learners ranked yet. Complete sessions to climb the leaderboard!
+                </p>
+              ) : (
+                learners.map((learner) => (
                   <div
-                    className="avatar-sm mr-3"
-                    style={{ background: 'var(--accent-violet)' }}
+                    key={learner.userId}
+                    className={`rank-item rank-${learner.rank}`}
+                    style={{ background: '#09090b', borderColor: 'var(--shadcn-border)' }}
                   >
-                    {learner.initials}
-                  </div>
-                  <div className="flex-1 ml-3">
-                    <h4 className="font-bold">
-                      {learner.displayName}
-                      {learner.isCurrentUser && (
-                        <span className="badge text-xs ml-1">You</span>
-                      )}
-                    </h4>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold text-cyan">
-                      {learner.skillsAcquired}
+                    <div className="rank-number">#{learner.rank}</div>
+                    <Avatar className="mr-3">
+                      <AvatarFallback style={{ background: 'rgba(139, 92, 246, 0.2)', color: '#a78bfa' }}>
+                        {learner.initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 ml-3">
+                      <h4 className="font-bold text-sm flex items-center gap-2">
+                        <span>{learner.displayName}</span>
+                        {learner.isCurrentUser && <Badge variant="amber">You</Badge>}
+                      </h4>
                     </div>
-                    <div className="text-xs text-secondary">Skills</div>
+                    <div className="text-right">
+                      <Badge variant="cyan">{learner.skillsAcquired} Skills</Badge>
+                    </div>
                   </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </>
   );

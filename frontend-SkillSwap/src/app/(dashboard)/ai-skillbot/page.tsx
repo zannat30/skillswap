@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation';
 import { Sparkles, Send, Map, Star, ArrowUpRight } from 'lucide-react';
 import { apiRequest } from '@/lib/apiClient';
 import { useAuth } from '@/context/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
 
 interface SuggestedMentorItem {
   userId: string;
@@ -163,34 +167,42 @@ export default function AISkillBotPage() {
   };
 
   return (
-    <div className="chat-container glass-card">
+    <Card className="chat-container">
       <div
         className="card-header flex-between"
-        style={{ borderBottom: '1px solid var(--border-glass)', flexWrap: 'wrap', gap: '10px' }}
+        style={{
+          borderBottom: '1px solid var(--shadcn-border)',
+          flexWrap: 'wrap',
+          gap: '10px',
+          background: '#09090b'
+        }}
       >
         <div className="flex items-center gap-3">
           <div className="msg-avatar bot-avatar">
             <Sparkles size={20} />
           </div>
           <div>
-            <h3 className="font-bold glowing-text">SkillBot AI</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold glowing-text">SkillBot AI</h3>
+              <Badge variant="cyan">Gemini 2.5</Badge>
+            </div>
             <p className="text-xs text-secondary">
-              Powered by Google Gemini • Technical Q&amp;A, 4-Week Roadmaps &amp; Mentor Matchmaking
+              Technical Q&amp;A, 4-Week Study Roadmaps &amp; Marketplace Mentor Matchmaking
             </p>
           </div>
         </div>
 
         <div className="flex gap-2">
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             disabled={isLoading}
             onClick={() => handleGenerateRoadmap(input || 'React.js State Management')}
-            className="btn glass-btn"
-            style={{ padding: '7px 12px', fontSize: '0.78rem' }}
             title="Generate a structured 4-week learning roadmap via POST /api/ai/roadmap"
           >
             <Map size={14} className="text-emerald" /> Generate 4-Week Roadmap
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -201,18 +213,24 @@ export default function AISkillBotPage() {
               <div className="msg-avatar bot-avatar">
                 <Sparkles style={{ width: '20px', height: '20px' }} />
               </div>
-              <div className="msg-bubble" style={{ maxWidth: '82%' }}>
-                {/* Render AI Answer Text */}
+              <div
+                className="msg-bubble"
+                style={{
+                  maxWidth: '84%',
+                  background: '#121216',
+                  borderColor: 'var(--shadcn-border)'
+                }}
+              >
                 {msg.text && (
                   <div
                     style={{
                       whiteSpace: 'pre-wrap',
-                      lineHeight: 1.55,
+                      lineHeight: 1.6,
                       marginBottom:
                         (msg.steps && msg.steps.length > 0) ||
                         (msg.roadmapWeeks && msg.roadmapWeeks.length > 0) ||
                         (msg.suggestedMentors && msg.suggestedMentors.length > 0)
-                          ? '12px'
+                          ? '14px'
                           : 0
                     }}
                   >
@@ -220,14 +238,13 @@ export default function AISkillBotPage() {
                   </div>
                 )}
 
-                {/* Render Actionable Steps if present */}
                 {msg.steps && msg.steps.length > 0 && (
                   <ol
                     style={{
                       marginLeft: '20px',
                       color: 'var(--accent-cyan)',
                       marginBottom:
-                        msg.suggestedMentors && msg.suggestedMentors.length > 0 ? '12px' : 0
+                        msg.suggestedMentors && msg.suggestedMentors.length > 0 ? '14px' : 0
                     }}
                   >
                     {msg.steps.map((step, i) => (
@@ -238,54 +255,49 @@ export default function AISkillBotPage() {
                   </ol>
                 )}
 
-                {/* Render 4-Week Structured Roadmap Cards (Feature #43) */}
                 {msg.roadmapWeeks && msg.roadmapWeeks.length > 0 && (
                   <div
                     style={{
                       display: 'grid',
                       gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                      gap: '8px',
-                      marginBottom: '12px'
+                      gap: '10px',
+                      marginBottom: '14px'
                     }}
                   >
                     {msg.roadmapWeeks.map((wk) => (
-                      <div
+                      <Card
                         key={wk.week}
                         style={{
-                          background: 'rgba(11, 15, 25, 0.65)',
-                          border: '1px solid var(--border-glass)',
-                          borderRadius: '10px',
-                          padding: '10px'
+                          background: '#09090b',
+                          padding: '12px'
                         }}
                       >
-                        <div
-                          className="text-xs font-bold text-emerald uppercase mb-1"
-                        >
+                        <Badge variant="emerald" style={{ marginBottom: '8px' }}>
                           Week {wk.week}: {wk.title}
-                        </div>
+                        </Badge>
                         <ul
                           style={{
                             marginLeft: '16px',
-                            fontSize: '0.76rem',
-                            color: 'var(--text-secondary)'
+                            fontSize: '0.78rem',
+                            color: 'var(--shadcn-muted-fg)',
+                            lineHeight: 1.55
                           }}
                         >
                           {wk.tasks.map((t, idx) => (
                             <li key={idx}>{t}</li>
                           ))}
                         </ul>
-                      </div>
+                      </Card>
                     ))}
                   </div>
                 )}
 
-                {/* Render 3 AI-Suggested Mentors from Marketplace (Feature #44) */}
                 {msg.suggestedMentors && msg.suggestedMentors.length > 0 && (
                   <div
                     style={{
-                      borderTop: '1px solid var(--border-glass)',
-                      paddingTop: '10px',
-                      marginTop: '8px'
+                      borderTop: '1px solid var(--shadcn-border)',
+                      paddingTop: '12px',
+                      marginTop: '10px'
                     }}
                   >
                     <p className="text-xs text-secondary uppercase font-bold mb-2">
@@ -294,52 +306,46 @@ export default function AISkillBotPage() {
                     <div
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
-                        gap: '8px'
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(195px, 1fr))',
+                        gap: '10px'
                       }}
                     >
                       {msg.suggestedMentors.map((m) => (
-                        <div
+                        <Card
                           key={m.userId}
                           style={{
-                            background: 'rgba(15, 23, 42, 0.75)',
-                            border: '1px solid var(--border-glass)',
-                            borderRadius: '10px',
-                            padding: '8px 10px',
+                            background: '#09090b',
+                            padding: '12px',
                             display: 'flex',
                             flexDirection: 'column',
                             justifyContent: 'space-between',
-                            gap: '6px'
+                            gap: '8px'
                           }}
                         >
                           <div>
                             <div className="flex-between">
                               <span className="font-bold text-sm">{m.displayName}</span>
-                              <span className="text-amber text-xs flex items-center gap-1">
-                                <Star size={11} fill="currentColor" /> {m.rating}
-                              </span>
+                              <Badge variant="amber">
+                                <Star size={10} fill="currentColor" /> {m.rating}
+                              </Badge>
                             </div>
                             <p
                               className="text-xs"
-                              style={{ color: 'var(--accent-emerald)', marginTop: '2px' }}
+                              style={{ color: 'var(--accent-emerald-light)', marginTop: '4px' }}
                             >
                               {m.matchingSkill}
                             </p>
                           </div>
-                          <button
-                            type="button"
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => handleBookSuggestedMentor(m.displayName)}
-                            className="btn glass-btn w-full"
-                            style={{
-                              padding: '5px 8px',
-                              fontSize: '0.73rem',
-                              justifyContent: 'center'
-                            }}
+                            className="w-full"
                           >
                             <span>View &amp; Book</span>
                             <ArrowUpRight size={12} />
-                          </button>
-                        </div>
+                          </Button>
+                        </Card>
                       ))}
                     </div>
                   </div>
@@ -348,9 +354,7 @@ export default function AISkillBotPage() {
             </div>
           ) : (
             <div key={msg.id} className="message msg-user">
-              <div className="msg-avatar user-avatar">
-                {user?.initials || 'Z'}
-              </div>
+              <div className="msg-avatar user-avatar">{user?.initials || 'U'}</div>
               <div className="msg-bubble">{msg.text}</div>
             </div>
           )
@@ -358,9 +362,16 @@ export default function AISkillBotPage() {
         <div ref={chatEndRef} />
       </div>
 
-      <div className="chat-input-area">
-        <form id="chat-form" className="input-wrapper" onSubmit={handleSubmit}>
-          <input
+      <div
+        className="chat-input-area"
+        style={{ background: '#09090b', borderTop: '1px solid var(--shadcn-border)' }}
+      >
+        <form
+          id="chat-form"
+          onSubmit={handleSubmit}
+          style={{ display: 'flex', gap: '10px', alignItems: 'center' }}
+        >
+          <Input
             type="text"
             id="chat-input"
             value={input}
@@ -369,16 +380,12 @@ export default function AISkillBotPage() {
             autoComplete="off"
             required
           />
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="btn btn-primary"
-            style={{ padding: '12px', borderRadius: '50%' }}
-          >
-            <Send size={18} />
-          </button>
+          <Button type="submit" variant="default" disabled={isLoading}>
+            <Send size={16} />
+            <span>Send</span>
+          </Button>
         </form>
       </div>
-    </div>
+    </Card>
   );
 }

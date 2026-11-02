@@ -24,6 +24,19 @@ import { FeedbackModal } from '@/features/session/components/FeedbackModal';
 import { apiRequest } from '@/lib/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useSocket } from '@/context/SocketContext';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent
+} from '@/components/ui/card';
 
 export default function ActiveSessionsPage() {
   const { user, refreshProfile } = useAuth();
@@ -126,7 +139,7 @@ export default function ActiveSessionsPage() {
         method: 'POST',
         body: JSON.stringify({
           messageText: trimmed,
-          senderName: user?.displayName || 'Zannat'
+          senderName: user?.displayName || 'Member'
         })
       });
       if (res?.success && res.message) {
@@ -265,70 +278,67 @@ export default function ActiveSessionsPage() {
   return (
     <>
       <section className="view active">
-        <div className="flex-between">
-          <h2>Active Sessions &amp; Workspace</h2>
-          <div className="category-tabs" style={{ marginBottom: 0 }}>
-            <button
-              type="button"
-              className={`tab-btn ${activeTab === 'active' ? 'active' : ''}`}
-              onClick={() => setActiveTab('active')}
-            >
-              Active &amp; Pending ({sessions.length})
-            </button>
-            <button
-              type="button"
-              className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
-              onClick={() => setActiveTab('history')}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-            >
-              <History size={14} /> Session History ({historySessions.length})
-            </button>
+        <div className="flex-between" style={{ flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <Badge variant="cyan" style={{ marginBottom: '6px' }}>
+              <Clock size={12} /> Synchronized Session Workspace
+            </Badge>
+            <h2 className="text-2xl font-bold">Active Sessions &amp; Workspace</h2>
           </div>
+
+          <Tabs
+            value={activeTab}
+            onValueChange={(v) => setActiveTab(v as 'active' | 'history')}
+          >
+            <TabsList>
+              <TabsTrigger value="active">
+                Active &amp; Pending ({sessions.length})
+              </TabsTrigger>
+              <TabsTrigger value="history">
+                <History size={14} /> Session History ({historySessions.length})
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
         {banner && (
-          <div
-            className="glass-panel mt-4"
-            style={{
-              padding: '12px 16px',
-              borderRadius: '12px',
-              borderColor:
-                banner.type === 'error' ? 'var(--accent-amber)' : 'var(--accent-emerald)',
-              color:
-                banner.type === 'error' ? 'var(--accent-amber)' : 'var(--accent-emerald)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '12px'
-            }}
+          <Alert
+            variant={banner.type === 'error' ? 'amber' : 'emerald'}
+            className="mt-4 flex-between"
           >
-            <div className="flex items-center gap-2 text-sm font-bold">
+            <div className="flex items-center gap-2 font-bold">
               {banner.type === 'error' ? <AlertTriangle size={16} /> : <Check size={16} />}
-              <span>{banner.text}</span>
+              <AlertDescription>{banner.text}</AlertDescription>
             </div>
-            <button
-              type="button"
-              className="icon-btn"
-              onClick={() => setBanner(null)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => setBanner(null)}>
               ×
-            </button>
-          </div>
+            </Button>
+          </Alert>
         )}
 
         {activeTab === 'active' ? (
           sessions.length === 0 ? (
-            <div className="glass-panel p-6 border-radius-16 mt-4">
-              <p className="text-secondary">
-                No active or pending sessions right now. Visit the{' '}
-                <Link href="/marketplace" className="text-emerald">
-                  Marketplace
-                </Link>{' '}
-                to book a 60-minute session!
-              </p>
-            </div>
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle style={{ fontSize: '1.05rem' }}>No Active or Pending Sessions</CardTitle>
+                <CardDescription>
+                  No active or pending sessions right now. Visit the{' '}
+                  <Link href="/marketplace" className="text-emerald font-bold">
+                    Marketplace
+                  </Link>{' '}
+                  to book a 60-minute session!
+                </CardDescription>
+              </CardHeader>
+            </Card>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '16px' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '20px',
+                marginTop: '20px'
+              }}
+            >
               {sessions.map((session) => {
                 const isLive = session.status === 'ACTIVE';
                 const isPending = session.status === 'PENDING';
@@ -337,40 +347,28 @@ export default function ActiveSessionsPage() {
                 const currentMessages = chatMessages[session._id] || [];
 
                 return (
-                  <div
-                    key={session._id}
-                    className="active-session-card glass-panel"
-                    style={{ maxWidth: '820px' }}
-                  >
-                    <div className="session-header">
+                  <Card key={session._id} style={{ maxWidth: '860px' }}>
+                    <div
+                      className="session-header"
+                      style={{
+                        background: '#09090b',
+                        borderBottom: '1px solid var(--shadcn-border)'
+                      }}
+                    >
                       {isLive && (
-                        <div className="status-badge pulse-active">
-                          <Radio size={14} /> LIVE
-                        </div>
+                        <Badge variant="destructive" className="pulse-active">
+                          <Radio size={13} /> LIVE
+                        </Badge>
                       )}
                       {isPending && (
-                        <div
-                          className="status-badge"
-                          style={{
-                            background: 'rgba(245, 158, 11, 0.15)',
-                            color: 'var(--accent-amber)',
-                            border: '1px solid rgba(245, 158, 11, 0.35)'
-                          }}
-                        >
-                          <Clock size={14} /> PENDING MENTOR START
-                        </div>
+                        <Badge variant="amber">
+                          <Clock size={13} /> PENDING MENTOR START
+                        </Badge>
                       )}
                       {isDisputed && (
-                        <div
-                          className="status-badge"
-                          style={{
-                            background: 'rgba(239, 68, 68, 0.2)',
-                            color: 'var(--accent-red)',
-                            border: '1px solid rgba(239, 68, 68, 0.4)'
-                          }}
-                        >
-                          <ShieldAlert size={14} /> DISPUTED • 50 CR FROZEN
-                        </div>
+                        <Badge variant="destructive">
+                          <ShieldAlert size={13} /> DISPUTED • 50 CR FROZEN
+                        </Badge>
                       )}
 
                       {isLive ? (
@@ -383,23 +381,26 @@ export default function ActiveSessionsPage() {
                           }}
                         />
                       ) : (
-                        <h3 className="ml-auto timer-display text-secondary" style={{ fontSize: '1.3rem' }}>
+                        <h3
+                          className="ml-auto timer-display text-secondary"
+                          style={{ fontSize: '1.2rem' }}
+                        >
                           {isPending ? '60:00 (Escrow Locked)' : 'FROZEN'}
                         </h3>
                       )}
                     </div>
 
-                    <div className="session-body">
+                    <CardContent style={{ paddingTop: '24px' }}>
                       <div className="flex-between" style={{ flexWrap: 'wrap', gap: '12px' }}>
                         <div className="flex gap-4 items-center">
-                          <div className="avatar-sm">
-                            {session.mentorInitials || 'AR'}
-                          </div>
+                          <Avatar>
+                            <AvatarFallback>{session.mentorInitials || 'M'}</AvatarFallback>
+                          </Avatar>
                           <div>
-                            <h4 className="text-lg">{session.skillName}</h4>
+                            <h4 className="text-lg font-bold">{session.skillName}</h4>
                             <p className="text-secondary text-sm">
-                              Mentor: <strong>{session.mentorName || 'Alex Rivera'}</strong> •
-                              Learner: <strong>{session.learnerName || 'Zannat'}</strong> •{' '}
+                              Mentor: <strong>{session.mentorName || 'Mentor'}</strong> •
+                              Learner: <strong>{session.learnerName || 'Learner'}</strong> •{' '}
                               <span className="text-amber">{session.creditsLocked} CR Escrow</span>
                             </p>
                             {session.bookedSlot?.date && (
@@ -411,10 +412,9 @@ export default function ActiveSessionsPage() {
                         </div>
 
                         <div className="flex gap-2">
-                          <button
-                            type="button"
-                            className="btn glass-btn"
-                            style={{ padding: '7px 12px', fontSize: '0.78rem' }}
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => {
                               setEditingLinkSessionId(
                                 editingLinkSessionId === session._id ? null : session._id
@@ -423,17 +423,16 @@ export default function ActiveSessionsPage() {
                             }}
                           >
                             <Link2 size={14} /> Meeting Link
-                          </button>
-                          <button
-                            type="button"
-                            className="btn glass-btn"
-                            style={{ padding: '7px 12px', fontSize: '0.78rem' }}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() =>
                               setOpenChatSessionId(isChatOpen ? null : session._id)
                             }
                           >
                             <MessageSquare size={14} /> Workspace Chat ({currentMessages.length})
-                          </button>
+                          </Button>
                         </div>
                       </div>
 
@@ -442,35 +441,25 @@ export default function ActiveSessionsPage() {
                         <div
                           className="mt-3 flex gap-2"
                           style={{
-                            background: 'rgba(15, 23, 42, 0.6)',
+                            background: '#09090b',
                             padding: '10px',
                             borderRadius: '10px',
-                            border: '1px solid var(--border-glass)'
+                            border: '1px solid var(--shadcn-border)'
                           }}
                         >
-                          <input
+                          <Input
                             type="url"
                             value={meetingLinkInput}
                             onChange={(e) => setMeetingLinkInput(e.target.value)}
                             placeholder="https://meet.google.com/..."
-                            style={{
-                              flex: 1,
-                              padding: '7px 10px',
-                              borderRadius: '8px',
-                              background: 'var(--bg-obsidian)',
-                              border: '1px solid var(--border-glass)',
-                              color: 'var(--text-primary)',
-                              fontSize: '0.82rem'
-                            }}
                           />
-                          <button
-                            type="button"
+                          <Button
+                            variant="default"
+                            size="sm"
                             onClick={() => handleSaveMeetingLink(session._id)}
-                            className="btn btn-primary"
-                            style={{ padding: '7px 14px', fontSize: '0.8rem' }}
                           >
                             Save Link
-                          </button>
+                          </Button>
                         </div>
                       )}
 
@@ -479,14 +468,13 @@ export default function ActiveSessionsPage() {
                         {isPending && (
                           <>
                             {String(user?._id) === String(session.mentorId) ? (
-                              <button
-                                type="button"
-                                className="btn btn-primary"
+                              <Button
+                                variant="default"
                                 onClick={() => handleStartSession(session)}
                                 title="Starts the 60-minute session timer as Mentor"
                               >
                                 <Play size={16} /> Start Session
-                              </button>
+                              </Button>
                             ) : (
                               <span
                                 className="text-xs text-secondary"
@@ -495,47 +483,50 @@ export default function ActiveSessionsPage() {
                                 Waiting for Mentor ({session.mentorName}) to start session...
                               </span>
                             )}
-                            <button
-                              type="button"
-                              className="btn btn-danger"
+                            <Button
+                              variant="destructive"
                               onClick={() => handleCancelSession(session)}
                             >
                               <XCircle size={16} /> Cancel &amp; Refund 50 CR
-                            </button>
+                            </Button>
                           </>
                         )}
 
                         {isLive && (
                           <>
-                            <button
-                              className="btn btn-primary"
+                            <Button
+                              variant="default"
                               onClick={() => handleJoinMeeting(session)}
-                              type="button"
                             >
-                              <Video size={18} /> Join Meeting
-                            </button>
-                            <button
-                              className="btn btn-danger"
+                              <Video size={16} /> Join Meeting
+                            </Button>
+                            <Button
+                              variant="destructive"
                               id="end-session-btn"
                               onClick={() => {
                                 setModalError(null);
                                 setFeedbackSession(session);
                               }}
-                              type="button"
                             >
-                              <CheckCircle size={18} /> End Session
-                            </button>
+                              <CheckCircle size={16} /> End Session
+                            </Button>
                           </>
                         )}
 
                         {isDisputed && (
                           <div className="flex items-center justify-between w-full">
                             <p className="text-sm text-red-400">
-                              Reason: &ldquo;{session.disputeReason || 'Disputed session delivery'}&rdquo;
+                              Reason: &ldquo;
+                              {session.disputeReason || 'Disputed session delivery'}
+                              &rdquo;
                             </p>
-                            <Link href="/admin/disputes" className="btn btn-primary">
-                              <ShieldAlert size={16} /> Open Admin Arbitration Console
-                            </Link>
+                            {user?.role === 'ADMIN' && (
+                              <Link href="/admin/disputes" style={{ textDecoration: 'none' }}>
+                                <Button variant="default" size="sm">
+                                  <ShieldAlert size={15} /> Open Admin Arbitration Console
+                                </Button>
+                              </Link>
+                            )}
                           </div>
                         )}
                       </div>
@@ -545,10 +536,10 @@ export default function ActiveSessionsPage() {
                         <div
                           className="mt-4"
                           style={{
-                            background: 'rgba(11, 15, 25, 0.7)',
-                            border: '1px solid var(--border-glass)',
-                            borderRadius: '12px',
-                            padding: '12px'
+                            background: '#09090b',
+                            border: '1px solid var(--shadcn-border)',
+                            borderRadius: '10px',
+                            padding: '14px'
                           }}
                         >
                           <div className="flex-between mb-2">
@@ -559,12 +550,12 @@ export default function ActiveSessionsPage() {
                           <div
                             className="custom-scrollbar"
                             style={{
-                              maxHeight: '170px',
+                              maxHeight: '175px',
                               overflowY: 'auto',
                               display: 'flex',
                               flexDirection: 'column',
                               gap: '8px',
-                              marginBottom: '10px',
+                              marginBottom: '12px',
                               paddingRight: '4px'
                             }}
                           >
@@ -581,11 +572,11 @@ export default function ActiveSessionsPage() {
                                     style={{
                                       alignSelf: isMe ? 'flex-end' : 'flex-start',
                                       background: isMe
-                                        ? 'rgba(16, 185, 129, 0.15)'
-                                        : 'rgba(30, 41, 59, 0.85)',
-                                      border: '1px solid var(--border-glass)',
+                                        ? 'rgba(16, 185, 129, 0.14)'
+                                        : '#18181b',
+                                      border: '1px solid var(--shadcn-border)',
                                       borderRadius: '10px',
-                                      padding: '6px 10px',
+                                      padding: '8px 12px',
                                       maxWidth: '80%'
                                     }}
                                   >
@@ -593,14 +584,14 @@ export default function ActiveSessionsPage() {
                                       style={{
                                         fontSize: '0.68rem',
                                         color: isMe
-                                          ? 'var(--accent-emerald)'
+                                          ? 'var(--accent-emerald-light)'
                                           : 'var(--accent-cyan)',
                                         fontWeight: 600
                                       }}
                                     >
                                       {msg.senderName}
                                     </div>
-                                    <div style={{ fontSize: '0.82rem' }}>
+                                    <div style={{ fontSize: '0.84rem' }}>
                                       {msg.messageText || msg.text}
                                     </div>
                                   </div>
@@ -612,52 +603,43 @@ export default function ActiveSessionsPage() {
                             onSubmit={(e) => handleSendChatMessage(e, session._id)}
                             className="flex gap-2"
                           >
-                            <input
+                            <Input
                               type="text"
                               value={chatInput}
                               onChange={(e) => setChatInput(e.target.value)}
                               placeholder="Send a message or code snippet to session room..."
-                              style={{
-                                flex: 1,
-                                padding: '8px 12px',
-                                borderRadius: '8px',
-                                background: 'var(--bg-obsidian)',
-                                border: '1px solid var(--border-glass)',
-                                color: 'var(--text-primary)',
-                                fontSize: '0.82rem'
-                              }}
                             />
-                            <button
-                              type="submit"
-                              className="btn btn-primary"
-                              style={{ padding: '8px 14px' }}
-                            >
+                            <Button type="submit" variant="default">
                               <Send size={15} />
-                            </button>
+                            </Button>
                           </form>
                         </div>
                       )}
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
                 );
               })}
             </div>
           )
         ) : (
           /* Session History Archive Tab (Feature #30) */
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '16px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '20px' }}>
             {historySessions.length === 0 ? (
-              <div className="glass-panel p-6 border-radius-16">
-                <p className="text-secondary">
-                  No completed, cancelled, or refunded sessions in archive yet.
-                </p>
-              </div>
+              <Card>
+                <CardHeader>
+                  <CardDescription>
+                    No completed, cancelled, or refunded sessions in archive yet.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
             ) : (
               historySessions.map((h) => (
-                <div key={h._id} className="glass-panel p-6 border-radius-16">
+                <Card key={h._id} style={{ padding: '20px 24px' }}>
                   <div className="flex-between">
                     <div className="flex items-center gap-3">
-                      <div className="avatar-sm">{h.mentorInitials || 'AR'}</div>
+                      <Avatar>
+                        <AvatarFallback>{h.mentorInitials || 'M'}</AvatarFallback>
+                      </Avatar>
                       <div>
                         <h4 className="font-bold">{h.skillName}</h4>
                         <p className="text-xs text-secondary">
@@ -665,26 +647,27 @@ export default function ActiveSessionsPage() {
                         </p>
                       </div>
                     </div>
-                    <span
-                      className={`badge-type ${
+                    <Badge
+                      variant={
                         h.status === 'COMPLETED'
-                          ? 'badge-release'
+                          ? 'emerald'
                           : h.status === 'REFUNDED'
-                            ? 'badge-refund'
-                            : 'badge-lock'
-                      }`}
+                            ? 'cyan'
+                            : 'amber'
+                      }
                     >
                       {h.status}
-                    </span>
+                    </Badge>
                   </div>
                   {h.feedback && (
                     <div
                       className="mt-3"
                       style={{
-                        background: 'rgba(15, 23, 42, 0.5)',
-                        padding: '8px 12px',
+                        background: '#09090b',
+                        border: '1px solid var(--shadcn-border)',
+                        padding: '10px 12px',
                         borderRadius: '8px',
-                        fontSize: '0.8rem'
+                        fontSize: '0.82rem'
                       }}
                     >
                       <span className="text-amber font-bold inline-flex items-center gap-1 mr-2">
@@ -693,7 +676,7 @@ export default function ActiveSessionsPage() {
                       <span className="text-secondary">{h.feedback.comment}</span>
                     </div>
                   )}
-                </div>
+                </Card>
               ))
             )}
           </div>
@@ -702,7 +685,7 @@ export default function ActiveSessionsPage() {
 
       <FeedbackModal
         open={Boolean(feedbackSession)}
-        mentorName={feedbackSession?.mentorName || 'Alex Rivera'}
+        mentorName={feedbackSession?.mentorName || 'Mentor'}
         skillName={feedbackSession?.skillName}
         errorMsg={modalError}
         isSubmitting={isSubmittingModal}

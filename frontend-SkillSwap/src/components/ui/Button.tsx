@@ -1,27 +1,46 @@
-import React from 'react';
+import * as React from 'react';
+import { cn } from '@/lib/utils';
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'glass' | 'danger' | 'icon';
+export type ButtonVariant =
+  | 'default'
+  | 'primary'
+  | 'secondary'
+  | 'outline'
+  | 'glass'
+  | 'ghost'
+  | 'destructive'
+  | 'danger'
+  | 'link';
+export type ButtonSize = 'default' | 'sm' | 'lg' | 'icon';
+
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
 }
 
-export function Button({
-  variant = 'primary',
-  className = '',
-  children,
-  ...props
-}: ButtonProps) {
-  const variantClass =
-    variant === 'primary'
-      ? 'btn btn-primary'
-      : variant === 'glass'
-      ? 'btn glass-btn'
-      : variant === 'danger'
-      ? 'btn btn-danger'
-      : 'icon-btn';
+const normalizeVariant = (v: ButtonVariant = 'default') => {
+  if (v === 'primary') return 'default';
+  if (v === 'glass') return 'outline';
+  if (v === 'danger') return 'destructive';
+  return v;
+};
 
-  return (
-    <button className={`${variantClass} ${className}`.trim()} {...props}>
-      {children}
-    </button>
-  );
-}
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant = 'default', size = 'default', type = 'button', ...props }, ref) => {
+    const normalized = normalizeVariant(variant);
+    return (
+      <button
+        ref={ref}
+        type={type}
+        className={cn(
+          'shadcn-btn',
+          `shadcn-btn--${normalized}`,
+          `shadcn-btn--size-${size}`,
+          className
+        )}
+        {...props}
+      />
+    );
+  }
+);
+Button.displayName = 'Button';

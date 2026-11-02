@@ -12,6 +12,7 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { Badge } from '@/components/ui/badge';
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -25,8 +26,18 @@ export function Sidebar() {
   const isAdminActive = pathname.startsWith('/admin');
 
   return (
-    <aside className="sidebar">
-      <Link href="/marketplace" className="brand">
+    <aside
+      className="sidebar"
+      style={{
+        background: '#09090b',
+        borderRight: '1px solid var(--shadcn-border)'
+      }}
+    >
+      <Link
+        href="/marketplace"
+        className="brand"
+        style={{ borderBottom: '1px solid var(--shadcn-border)' }}
+      >
         <div className="logo-box">S</div>
         <h2>
           Skill<span>Swap</span>
@@ -38,58 +49,57 @@ export function Sidebar() {
           href="/marketplace"
           className={`nav-item ${isMarketplaceActive ? 'active' : ''}`}
         >
-          <Compass />
+          <Compass size={18} />
           <span>Marketplace</span>
         </Link>
         <Link
           href="/active-sessions"
           className={`nav-item ${isSessionsActive ? 'active' : ''}`}
         >
-          <BookOpen />
+          <BookOpen size={18} />
           <span>Active Sessions</span>
           {activeSessionsCount > 0 && (
-            <span className="badge">{activeSessionsCount}</span>
+            <Badge variant="amber" style={{ marginLeft: 'auto' }}>
+              {activeSessionsCount}
+            </Badge>
           )}
         </Link>
         <Link
           href="/ai-skillbot"
           className={`nav-item ${isSkillbotActive ? 'active' : ''}`}
         >
-          <MessageSquare />
+          <MessageSquare size={18} />
           <span>AI SkillBot</span>
         </Link>
         <Link
           href="/profile"
           className={`nav-item ${isProfileActive ? 'active' : ''}`}
         >
-          <UserIcon />
+          <UserIcon size={18} />
           <span>My Profile</span>
         </Link>
         <Link
           href="/leaderboard"
           className={`nav-item ${isLeaderboardActive ? 'active' : ''}`}
         >
-          <Trophy />
+          <Trophy size={18} />
           <span>Leaderboard</span>
         </Link>
 
         {user?.role === 'ADMIN' && (
           <>
-            <p className="nav-label" style={{ marginTop: '16px' }}>
+            <p className="nav-label" style={{ marginTop: '20px' }}>
               Governance
             </p>
             <Link
               href="/admin/disputes"
               className={`nav-item ${isAdminActive ? 'active' : ''}`}
             >
-              <ShieldAlert />
+              <ShieldAlert size={18} />
               <span>Admin Console</span>
-              <span
-                className="badge"
-                style={{ background: 'var(--accent-amber)', color: '#000' }}
-              >
+              <Badge variant="amber" style={{ marginLeft: 'auto' }}>
                 ADMIN
-              </span>
+              </Badge>
             </Link>
           </>
         )}

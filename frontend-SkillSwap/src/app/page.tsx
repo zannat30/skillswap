@@ -20,24 +20,25 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter
+} from '@/components/ui/card';
 
 export default function LandingPage() {
   const { user, isLoadingAuth } = useAuth();
   const scrollAnimRef = useRef<number | null>(null);
 
-  const cardBaseStyle: React.CSSProperties = {
-    padding: '32px 28px',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    gap: '18px',
-    height: '100%'
-  };
-
   const iconBoxStyle = (rgb: string): React.CSSProperties => ({
-    width: '48px',
-    height: '48px',
-    borderRadius: '14px',
+    width: '46px',
+    height: '46px',
+    borderRadius: '10px',
     background: `rgba(${rgb}, 0.12)`,
     border: `1px solid rgba(${rgb}, 0.28)`,
     display: 'flex',
@@ -47,12 +48,12 @@ export default function LandingPage() {
   });
 
   const codePillStyle: React.CSSProperties = {
-    background: 'rgba(30, 41, 59, 0.85)',
-    border: '1px solid var(--border-glass)',
+    background: '#18181b',
+    border: '1px solid var(--shadcn-border)',
     padding: '2px 7px',
     borderRadius: '6px',
     fontSize: '0.78rem',
-    color: 'var(--text-primary)',
+    color: 'var(--shadcn-fg)',
     fontFamily: 'monospace'
   };
 
@@ -84,7 +85,7 @@ export default function LandingPage() {
     const duration = 720;
     let startTime: number | null = null;
 
-    // Starts fast immediately on click, glides smoothly to a soft stop at the end
+    // Fast start, smooth feather-soft stop at the end
     const easeOutQuint = (t: number) => 1 - Math.pow(1 - t, 5);
 
     const step = (currentTime: number) => {
@@ -107,13 +108,13 @@ export default function LandingPage() {
     <div
       style={{
         minHeight: '100vh',
-        background: 'var(--bg-base)',
-        color: 'var(--text-primary)',
+        background: 'var(--shadcn-bg)',
+        color: 'var(--shadcn-fg)',
         display: 'flex',
         flexDirection: 'column'
       }}
     >
-      {/* Fixed Top Landing Header (Always Frozen at Top on Scroll) */}
+      {/* Fixed Top shadcn/ui Header (Frozen at Top on Scroll) */}
       <header
         style={{
           position: 'fixed',
@@ -122,16 +123,15 @@ export default function LandingPage() {
           right: 0,
           width: '100%',
           zIndex: 1000,
-          height: '76px',
-          borderBottom: '1px solid var(--border-glass)',
-          background: 'rgba(11, 15, 25, 0.88)',
-          backdropFilter: 'blur(18px)',
-          WebkitBackdropFilter: 'blur(18px)',
+          height: '72px',
+          borderBottom: '1px solid var(--shadcn-border)',
+          background: 'rgba(9, 9, 11, 0.88)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '0 40px',
-          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.35)'
+          padding: '0 40px'
         }}
       >
         <div
@@ -145,74 +145,75 @@ export default function LandingPage() {
           </h2>
         </div>
 
-        <nav
-          className="flex items-center"
-          style={{ gap: '28px', fontSize: '0.92rem', fontWeight: 500 }}
-        >
-          <a
-            href="#how-it-works"
-            onClick={(e) => handleSmoothScroll(e, 'how-it-works')}
-            style={{ color: 'var(--text-secondary)', textDecoration: 'none', cursor: 'pointer' }}
+        <nav className="flex items-center" style={{ gap: '6px' }}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e: any) => handleSmoothScroll(e, 'how-it-works')}
           >
             How It Works
-          </a>
-          <a
-            href="#architecture"
-            onClick={(e) => handleSmoothScroll(e, 'architecture')}
-            style={{ color: 'var(--text-secondary)', textDecoration: 'none', cursor: 'pointer' }}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e: any) => handleSmoothScroll(e, 'architecture')}
           >
             Escrow Architecture
-          </a>
-          <a
-            href="#domains"
-            onClick={(e) => handleSmoothScroll(e, 'domains')}
-            style={{ color: 'var(--text-secondary)', textDecoration: 'none', cursor: 'pointer' }}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e: any) => handleSmoothScroll(e, 'domains')}
           >
             Skill Domains
-          </a>
+          </Button>
         </nav>
 
         <div className="flex items-center gap-3">
           {!isLoadingAuth && user ? (
             <Link
               href={user.role === 'ADMIN' ? '/admin/disputes' : '/marketplace'}
-              className="btn btn-primary"
               style={{ textDecoration: 'none' }}
             >
-              <span>Go to Dashboard ({user.displayName})</span>
-              <ArrowRight size={16} />
+              <Button variant="default">
+                <span>Go to Dashboard ({user.displayName})</span>
+                <ArrowRight size={16} />
+              </Button>
             </Link>
           ) : (
             <>
-              <Link href="/login" className="btn glass-btn" style={{ textDecoration: 'none' }}>
-                <LogIn size={16} />
-                <span>Sign In</span>
+              <Link href="/login" style={{ textDecoration: 'none' }}>
+                <Button variant="outline">
+                  <LogIn size={15} />
+                  <span>Sign In</span>
+                </Button>
               </Link>
-              <Link href="/register" className="btn btn-primary" style={{ textDecoration: 'none' }}>
-                <UserPlus size={16} />
-                <span>Create Account (+100 CR)</span>
+              <Link href="/register" style={{ textDecoration: 'none' }}>
+                <Button variant="default">
+                  <UserPlus size={15} />
+                  <span>Create Account (+100 CR)</span>
+                </Button>
               </Link>
             </>
           )}
         </div>
       </header>
 
-      {/* Main Scrollable Content (padded for 76px fixed top header) */}
+      {/* Main Scrollable Content */}
       <main
         style={{
           flex: 1,
           maxWidth: '1220px',
           width: '100%',
           margin: '0 auto',
-          padding: '136px 32px 100px',
+          padding: '128px 32px 100px',
           display: 'flex',
           flexDirection: 'column',
           gap: '96px'
         }}
       >
         {/* 1. HERO SECTION */}
-        <section
-          className="glass-card"
+        <Card
           style={{
             padding: '64px 44px',
             textAlign: 'center',
@@ -220,29 +221,22 @@ export default function LandingPage() {
             flexDirection: 'column',
             alignItems: 'center',
             background:
-              'radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.14), rgba(15, 23, 42, 0.55) 70%)'
+              'radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.12), #0c0c0f 68%)'
           }}
         >
-          <div
-            className="tag tag-emerald"
-            style={{
-              padding: '7px 16px',
-              fontSize: '0.82rem',
-              borderRadius: '9999px',
-              marginBottom: '24px'
-            }}
-          >
-            <Sparkles size={14} />
+          <Badge variant="emerald" style={{ padding: '6px 14px', marginBottom: '24px' }}>
+            <Sparkles size={13} />
             <span>Decentralized Peer-to-Peer Knowledge Barter Economy</span>
-          </div>
+          </Badge>
 
           <h1
             className="hero-title"
             style={{
               fontSize: '3.2rem',
               maxWidth: '840px',
-              lineHeight: 1.15,
-              marginBottom: '20px'
+              lineHeight: 1.14,
+              marginBottom: '20px',
+              letterSpacing: '-0.03em'
             }}
           >
             Trade Skills Instead of Money with{' '}
@@ -254,7 +248,7 @@ export default function LandingPage() {
             style={{
               maxWidth: '670px',
               margin: '0 auto 36px',
-              fontSize: '1.1rem',
+              fontSize: '1.08rem',
               lineHeight: 1.7
             }}
           >
@@ -270,152 +264,98 @@ export default function LandingPage() {
             {!isLoadingAuth && user ? (
               <Link
                 href={user.role === 'ADMIN' ? '/admin/disputes' : '/marketplace'}
-                className="btn btn-primary"
-                style={{
-                  padding: '14px 30px',
-                  fontSize: '1rem',
-                  textDecoration: 'none'
-                }}
+                style={{ textDecoration: 'none' }}
               >
-                <span>Enter SkillSwap Workspace</span>
-                <ArrowRight size={18} />
+                <Button variant="default" size="lg">
+                  <span>Enter SkillSwap Workspace</span>
+                  <ArrowRight size={18} />
+                </Button>
               </Link>
             ) : (
               <>
-                <Link
-                  href="/register"
-                  className="btn btn-primary"
-                  style={{
-                    padding: '14px 30px',
-                    fontSize: '1rem',
-                    textDecoration: 'none'
-                  }}
-                >
-                  <UserPlus size={18} />
-                  <span>Create Account &amp; Claim 100 Credits</span>
+                <Link href="/register" style={{ textDecoration: 'none' }}>
+                  <Button variant="default" size="lg">
+                    <UserPlus size={18} />
+                    <span>Create Account &amp; Claim 100 Credits</span>
+                  </Button>
                 </Link>
-                <Link
-                  href="/login"
-                  className="btn glass-btn"
-                  style={{
-                    padding: '14px 30px',
-                    fontSize: '1rem',
-                    textDecoration: 'none'
-                  }}
-                >
-                  <LogIn size={18} />
-                  <span>Sign In to Existing Account</span>
+                <Link href="/login" style={{ textDecoration: 'none' }}>
+                  <Button variant="outline" size="lg">
+                    <LogIn size={18} />
+                    <span>Sign In to Existing Account</span>
+                  </Button>
                 </Link>
               </>
             )}
           </div>
 
-          {/* Economy Metrics Strip */}
+          {/* Economy Metrics Strip (shadcn Cards) */}
           <div
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
-              gap: '20px',
+              gap: '16px',
               width: '100%'
             }}
           >
-            <div
-              className="glass-card"
-              style={{
-                padding: '24px 20px',
-                textAlign: 'center',
-                background: 'rgba(15, 23, 42, 0.65)'
-              }}
-            >
-              <div
-                className="text-emerald font-bold"
-                style={{ fontSize: '1.75rem', marginBottom: '6px' }}
-              >
-                +100 CR
-              </div>
-              <div className="text-xs text-secondary" style={{ lineHeight: 1.5 }}>
-                Instant Onboarding Wallet Bonus
-              </div>
-            </div>
-            <div
-              className="glass-card"
-              style={{
-                padding: '24px 20px',
-                textAlign: 'center',
-                background: 'rgba(15, 23, 42, 0.65)'
-              }}
-            >
-              <div
-                className="text-cyan font-bold"
-                style={{ fontSize: '1.75rem', marginBottom: '6px' }}
-              >
-                50 CR
-              </div>
-              <div className="text-xs text-secondary" style={{ lineHeight: 1.5 }}>
-                Fixed 60-Min Session Escrow Lock
-              </div>
-            </div>
-            <div
-              className="glass-card"
-              style={{
-                padding: '24px 20px',
-                textAlign: 'center',
-                background: 'rgba(15, 23, 42, 0.65)'
-              }}
-            >
-              <div
-                className="text-emerald font-bold"
-                style={{ fontSize: '1.75rem', marginBottom: '6px' }}
-              >
-                +45 CR (90%)
-              </div>
-              <div className="text-xs text-secondary" style={{ lineHeight: 1.5 }}>
-                Released to Mentor on Completion
-              </div>
-            </div>
-            <div
-              className="glass-card"
-              style={{
-                padding: '24px 20px',
-                textAlign: 'center',
-                background: 'rgba(15, 23, 42, 0.65)'
-              }}
-            >
-              <div
-                className="text-amber font-bold"
-                style={{ fontSize: '1.75rem', marginBottom: '6px' }}
-              >
-                -5 CR (10%)
-              </div>
-              <div className="text-xs text-secondary" style={{ lineHeight: 1.5 }}>
-                Deflationary Platform Fee Burn
-              </div>
-            </div>
+            <Card style={{ background: '#09090b' }}>
+              <CardHeader style={{ padding: '20px', textAlign: 'center' }}>
+                <div className="text-emerald font-bold" style={{ fontSize: '1.75rem' }}>
+                  +100 CR
+                </div>
+                <CardDescription>Instant Onboarding Wallet Bonus</CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card style={{ background: '#09090b' }}>
+              <CardHeader style={{ padding: '20px', textAlign: 'center' }}>
+                <div className="text-cyan font-bold" style={{ fontSize: '1.75rem' }}>
+                  50 CR
+                </div>
+                <CardDescription>Fixed 60-Min Session Escrow Lock</CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card style={{ background: '#09090b' }}>
+              <CardHeader style={{ padding: '20px', textAlign: 'center' }}>
+                <div className="text-emerald font-bold" style={{ fontSize: '1.75rem' }}>
+                  +45 CR (90%)
+                </div>
+                <CardDescription>Released to Mentor on Completion</CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card style={{ background: '#09090b' }}>
+              <CardHeader style={{ padding: '20px', textAlign: 'center' }}>
+                <div className="text-amber font-bold" style={{ fontSize: '1.75rem' }}>
+                  -5 CR (10%)
+                </div>
+                <CardDescription>Deflationary Platform Fee Burn</CardDescription>
+              </CardHeader>
+            </Card>
           </div>
-        </section>
+        </Card>
 
         {/* 2. HOW IT WORKS (4-STEP WORKFLOW) */}
         <section id="how-it-works">
           <div className="text-center" style={{ marginBottom: '44px' }}>
-            <span
-              className="tag tag-cyan"
-              style={{ padding: '6px 16px', borderRadius: '9999px', fontSize: '0.8rem' }}
-            >
+            <Badge variant="cyan" style={{ padding: '5px 14px' }}>
               Step-by-Step Protocol
-            </span>
+            </Badge>
             <h2
               style={{
                 fontSize: '2.2rem',
                 fontWeight: 800,
                 marginTop: '16px',
-                marginBottom: '12px'
+                marginBottom: '12px',
+                letterSpacing: '-0.02em'
               }}
             >
               How the <span className="text-gradient">Zero-Trust Barter Lifecycle</span> Works
             </h2>
             <p
               className="text-secondary"
-              style={{ maxWidth: '620px', margin: '0 auto', lineHeight: 1.65, fontSize: '1rem' }}
+              style={{ maxWidth: '620px', margin: '0 auto', lineHeight: 1.65, fontSize: '0.98rem' }}
             >
               No credit cards or cash required. Learn from peers and earn credits by teaching what
               you know.
@@ -426,142 +366,108 @@ export default function LandingPage() {
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(255px, 1fr))',
-              gap: '24px'
+              gap: '20px'
             }}
           >
-            <div className="glass-card" style={cardBaseStyle}>
-              <div>
-                <div className="flex-between" style={{ marginBottom: '22px' }}>
-                  <span
-                    className="tag tag-emerald"
-                    style={{ padding: '5px 12px', fontWeight: 700, letterSpacing: '0.5px' }}
-                  >
-                    STEP 01
-                  </span>
+            <Card className="shadcn-card-hover" style={{ display: 'flex', flexDirection: 'column' }}>
+              <CardHeader>
+                <div className="flex-between" style={{ marginBottom: '14px' }}>
+                  <Badge variant="emerald">STEP 01</Badge>
                   <div style={iconBoxStyle('16, 185, 129')}>
-                    <UserPlus className="text-emerald" size={22} />
+                    <UserPlus className="text-emerald" size={20} />
                   </div>
                 </div>
-                <h3
-                  className="font-bold"
-                  style={{ fontSize: '1.18rem', marginBottom: '12px', lineHeight: 1.35 }}
-                >
-                  Register &amp; Claim 100 CR
-                </h3>
-                <p className="text-secondary text-sm" style={{ lineHeight: 1.68 }}>
+                <CardTitle>Register &amp; Claim 100 CR</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription style={{ lineHeight: 1.68 }}>
                   Sign up in seconds to receive <strong>100 Virtual Credits</strong> and list the
                   skills you can teach (<em>Skills I Have</em>) alongside skills you want to learn (
                   <em>Skills I Want</em>).
-                </p>
-              </div>
-            </div>
+                </CardDescription>
+              </CardContent>
+            </Card>
 
-            <div className="glass-card" style={cardBaseStyle}>
-              <div>
-                <div className="flex-between" style={{ marginBottom: '22px' }}>
-                  <span
-                    className="tag tag-cyan"
-                    style={{ padding: '5px 12px', fontWeight: 700, letterSpacing: '0.5px' }}
-                  >
-                    STEP 02
-                  </span>
+            <Card className="shadcn-card-hover" style={{ display: 'flex', flexDirection: 'column' }}>
+              <CardHeader>
+                <div className="flex-between" style={{ marginBottom: '14px' }}>
+                  <Badge variant="cyan">STEP 02</Badge>
                   <div style={iconBoxStyle('6, 182, 212')}>
-                    <Repeat className="text-cyan" size={22} />
+                    <Repeat className="text-cyan" size={20} />
                   </div>
                 </div>
-                <h3
-                  className="font-bold"
-                  style={{ fontSize: '1.18rem', marginBottom: '12px', lineHeight: 1.35 }}
-                >
-                  Match &amp; Lock 50 CR Escrow
-                </h3>
-                <p className="text-secondary text-sm" style={{ lineHeight: 1.68 }}>
+                <CardTitle>Match &amp; Lock 50 CR Escrow</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription style={{ lineHeight: 1.68 }}>
                   Discover verified mentors or bidirectional barter matches. Booking a time slot
                   atomically locks <strong>50 CR</strong> in the platform Escrow vault.
-                </p>
-              </div>
-            </div>
+                </CardDescription>
+              </CardContent>
+            </Card>
 
-            <div className="glass-card" style={cardBaseStyle}>
-              <div>
-                <div className="flex-between" style={{ marginBottom: '22px' }}>
-                  <span
-                    className="tag tag-violet"
-                    style={{ padding: '5px 12px', fontWeight: 700, letterSpacing: '0.5px' }}
-                  >
-                    STEP 03
-                  </span>
+            <Card className="shadcn-card-hover" style={{ display: 'flex', flexDirection: 'column' }}>
+              <CardHeader>
+                <div className="flex-between" style={{ marginBottom: '14px' }}>
+                  <Badge variant="violet">STEP 03</Badge>
                   <div style={iconBoxStyle('139, 92, 246')}>
-                    <Clock style={{ color: '#a78bfa' }} size={22} />
+                    <Clock style={{ color: '#a78bfa' }} size={20} />
                   </div>
                 </div>
-                <h3
-                  className="font-bold"
-                  style={{ fontSize: '1.18rem', marginBottom: '12px', lineHeight: 1.35 }}
-                >
-                  60-Min Live Session Room
-                </h3>
-                <p className="text-secondary text-sm" style={{ lineHeight: 1.68 }}>
+                <CardTitle>60-Min Live Session Room</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription style={{ lineHeight: 1.68 }}>
                   Collaborate inside an isolated Socket.io workspace with an authoritative{' '}
                   <strong>60:00 countdown timer</strong>, persistent chat, and video meeting link.
-                </p>
-              </div>
-            </div>
+                </CardDescription>
+              </CardContent>
+            </Card>
 
-            <div className="glass-card" style={cardBaseStyle}>
-              <div>
-                <div className="flex-between" style={{ marginBottom: '22px' }}>
-                  <span
-                    className="tag tag-amber"
-                    style={{ padding: '5px 12px', fontWeight: 700, letterSpacing: '0.5px' }}
-                  >
-                    STEP 04
-                  </span>
+            <Card className="shadcn-card-hover" style={{ display: 'flex', flexDirection: 'column' }}>
+              <CardHeader>
+                <div className="flex-between" style={{ marginBottom: '14px' }}>
+                  <Badge variant="amber">STEP 04</Badge>
                   <div style={iconBoxStyle('245, 158, 11')}>
-                    <CheckCircle2 className="text-amber" size={22} />
+                    <CheckCircle2 className="text-amber" size={20} />
                   </div>
                 </div>
-                <h3
-                  className="font-bold"
-                  style={{ fontSize: '1.18rem', marginBottom: '12px', lineHeight: 1.35 }}
-                >
-                  90/10 Settlement or Refund
-                </h3>
-                <p className="text-secondary text-sm" style={{ lineHeight: 1.68 }}>
+                <CardTitle>90/10 Settlement or Refund</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription style={{ lineHeight: 1.68 }}>
                   Upon completion, <strong>45 CR</strong> goes to the Mentor and{' '}
                   <strong>5 CR</strong> is burned. If an issue arises, raise a dispute for Admin
                   arbitration &amp; full <strong>50 CR</strong> refund protection.
-                </p>
-              </div>
-            </div>
+                </CardDescription>
+              </CardContent>
+            </Card>
           </div>
         </section>
 
         {/* 3. CORE ARCHITECTURE HIGHLIGHTS */}
         <section id="architecture">
           <div className="text-center" style={{ marginBottom: '44px' }}>
-            <span
-              className="tag tag-emerald"
-              style={{ padding: '6px 16px', borderRadius: '9999px', fontSize: '0.8rem' }}
-            >
+            <Badge variant="emerald" style={{ padding: '5px 14px' }}>
               System Architecture
-            </span>
+            </Badge>
             <h2
               style={{
                 fontSize: '2.2rem',
                 fontWeight: 800,
                 marginTop: '16px',
-                marginBottom: '12px'
+                marginBottom: '12px',
+                letterSpacing: '-0.02em'
               }}
             >
               Built for <span className="text-gradient">Security, Fairness &amp; Speed</span>
             </h2>
             <p
               className="text-secondary"
-              style={{ maxWidth: '620px', margin: '0 auto', lineHeight: 1.65, fontSize: '1rem' }}
+              style={{ maxWidth: '620px', margin: '0 auto', lineHeight: 1.65, fontSize: '0.98rem' }}
             >
-              Every credit transfer, session room, and domain check is enforced by strict server-side
-              guarantees.
+              Every credit transfer, session room, and domain check is enforced by strict
+              server-side guarantees.
             </p>
           </div>
 
@@ -569,107 +475,94 @@ export default function LandingPage() {
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(255px, 1fr))',
-              gap: '24px'
+              gap: '20px'
             }}
           >
-            <div className="glass-card" style={cardBaseStyle}>
-              <div>
-                <div style={{ ...iconBoxStyle('16, 185, 129'), marginBottom: '20px' }}>
-                  <Wallet className="text-emerald" size={24} />
+            <Card className="shadcn-card-hover">
+              <CardHeader>
+                <div style={{ ...iconBoxStyle('16, 185, 129'), marginBottom: '14px' }}>
+                  <Wallet className="text-emerald" size={22} />
                 </div>
-                <h3
-                  className="font-bold"
-                  style={{ fontSize: '1.18rem', marginBottom: '12px', lineHeight: 1.35 }}
-                >
-                  Atomic 90/10 Escrow Engine
-                </h3>
-                <p className="text-secondary text-sm" style={{ lineHeight: 1.68 }}>
+                <CardTitle>Atomic 90/10 Escrow Engine</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription style={{ lineHeight: 1.68 }}>
                   Multi-document MongoDB ACID transactions guarantee zero double-spending.
                   Unaccepted <code style={codePillStyle}>PENDING</code> bookings automatically
                   self-cancel after 24 hours and refund <strong>+50 CR</strong> to the Learner.
-                </p>
-              </div>
-            </div>
+                </CardDescription>
+              </CardContent>
+            </Card>
 
-            <div className="glass-card" style={cardBaseStyle}>
-              <div>
-                <div style={{ ...iconBoxStyle('6, 182, 212'), marginBottom: '20px' }}>
-                  <Clock className="text-cyan" size={24} />
+            <Card className="shadcn-card-hover">
+              <CardHeader>
+                <div style={{ ...iconBoxStyle('6, 182, 212'), marginBottom: '14px' }}>
+                  <Clock className="text-cyan" size={22} />
                 </div>
-                <h3
-                  className="font-bold"
-                  style={{ fontSize: '1.18rem', marginBottom: '12px', lineHeight: 1.35 }}
-                >
-                  Verified Socket.io Rooms
-                </h3>
-                <p className="text-secondary text-sm" style={{ lineHeight: 1.68 }}>
+                <CardTitle>Verified Socket.io Rooms</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription style={{ lineHeight: 1.68 }}>
                   Strict JWT handshake and participant verification ensure only the booked Learner
-                  and Mentor can join a session room, exchange live messages, and synchronize timers.
-                </p>
-              </div>
-            </div>
+                  and Mentor can join a session room, exchange live messages, and synchronize
+                  timers.
+                </CardDescription>
+              </CardContent>
+            </Card>
 
-            <div className="glass-card" style={cardBaseStyle}>
-              <div>
-                <div style={{ ...iconBoxStyle('139, 92, 246'), marginBottom: '20px' }}>
-                  <Bot style={{ color: '#a78bfa' }} size={24} />
+            <Card className="shadcn-card-hover">
+              <CardHeader>
+                <div style={{ ...iconBoxStyle('139, 92, 246'), marginBottom: '14px' }}>
+                  <Bot style={{ color: '#a78bfa' }} size={22} />
                 </div>
-                <h3
-                  className="font-bold"
-                  style={{ fontSize: '1.18rem', marginBottom: '12px', lineHeight: 1.35 }}
-                >
-                  Gemini AI SkillBot &amp; Roadmaps
-                </h3>
-                <p className="text-secondary text-sm" style={{ lineHeight: 1.68 }}>
+                <CardTitle>Gemini AI SkillBot &amp; Roadmaps</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription style={{ lineHeight: 1.68 }}>
                   Ask technical questions 24/7, generate structured 4-week study roadmaps, and get
                   matched with verified peer mentors inside the SkillSwap marketplace.
-                </p>
-              </div>
-            </div>
+                </CardDescription>
+              </CardContent>
+            </Card>
 
-            <div className="glass-card" style={cardBaseStyle}>
-              <div>
-                <div style={{ ...iconBoxStyle('245, 158, 11'), marginBottom: '20px' }}>
-                  <Scale className="text-amber" size={24} />
+            <Card className="shadcn-card-hover">
+              <CardHeader>
+                <div style={{ ...iconBoxStyle('245, 158, 11'), marginBottom: '14px' }}>
+                  <Scale className="text-amber" size={22} />
                 </div>
-                <h3
-                  className="font-bold"
-                  style={{ fontSize: '1.18rem', marginBottom: '12px', lineHeight: 1.35 }}
-                >
-                  Admin Arbitration &amp; 403 Guard
-                </h3>
-                <p className="text-secondary text-sm" style={{ lineHeight: 1.68 }}>
+                <CardTitle>Admin Arbitration &amp; 403 Guard</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription style={{ lineHeight: 1.68 }}>
                   Automated <code style={codePillStyle}>403 FORBIDDEN_DOMAIN</code> boundary
                   filtering blocks academic fraud and prohibited services, backed by Super Admin
                   dispute resolution.
-                </p>
-              </div>
-            </div>
+                </CardDescription>
+              </CardContent>
+            </Card>
           </div>
         </section>
 
         {/* 4. PERMITTED SKILL DOMAINS */}
         <section id="domains">
           <div className="text-center" style={{ marginBottom: '44px' }}>
-            <span
-              className="tag tag-violet"
-              style={{ padding: '6px 16px', borderRadius: '9999px', fontSize: '0.8rem' }}
-            >
+            <Badge variant="violet" style={{ padding: '5px 14px' }}>
               Verified Categories
-            </span>
+            </Badge>
             <h2
               style={{
                 fontSize: '2.2rem',
                 fontWeight: 800,
                 marginTop: '16px',
-                marginBottom: '12px'
+                marginBottom: '12px',
+                letterSpacing: '-0.02em'
               }}
             >
               Permitted <span className="text-gradient">Knowledge Domains</span>
             </h2>
             <p
               className="text-secondary"
-              style={{ maxWidth: '620px', margin: '0 auto', lineHeight: 1.65, fontSize: '1rem' }}
+              style={{ maxWidth: '620px', margin: '0 auto', lineHeight: 1.65, fontSize: '0.98rem' }}
             >
               Protected by automated domain boundary enforcement to ensure ethical peer learning.
             </p>
@@ -679,117 +572,132 @@ export default function LandingPage() {
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(255px, 1fr))',
-              gap: '24px'
+              gap: '20px'
             }}
           >
-            <div className="glass-card" style={cardBaseStyle}>
+            <Card
+              className="shadcn-card-hover"
+              style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+            >
               <div>
-                <div style={{ ...iconBoxStyle('16, 185, 129'), marginBottom: '20px' }}>
-                  <Code2 className="text-emerald" size={24} />
-                </div>
-                <h3
-                  className="font-bold"
-                  style={{ fontSize: '1.18rem', marginBottom: '12px', lineHeight: 1.35 }}
-                >
-                  Technology &amp; Engineering
-                </h3>
-                <p className="text-secondary text-sm" style={{ lineHeight: 1.68 }}>
-                  React.js, Next.js, Node.js, Python, System Design, Data Structures, Cloud &amp;
-                  DevOps.
-                </p>
+                <CardHeader>
+                  <div style={{ ...iconBoxStyle('16, 185, 129'), marginBottom: '14px' }}>
+                    <Code2 className="text-emerald" size={22} />
+                  </div>
+                  <CardTitle>Technology &amp; Engineering</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription style={{ lineHeight: 1.68 }}>
+                    React.js, Next.js, Node.js, Python, System Design, Data Structures, Cloud &amp;
+                    DevOps.
+                  </CardDescription>
+                </CardContent>
               </div>
-              <div className="tags" style={{ marginTop: '8px' }}>
-                <span className="tag tag-emerald">React.js</span>
-                <span className="tag tag-emerald">Node.js</span>
-                <span className="tag tag-emerald">Python</span>
-              </div>
-            </div>
+              <CardFooter style={{ gap: '8px', flexWrap: 'wrap' }}>
+                <Badge variant="emerald">React.js</Badge>
+                <Badge variant="emerald">Node.js</Badge>
+                <Badge variant="emerald">Python</Badge>
+              </CardFooter>
+            </Card>
 
-            <div className="glass-card" style={cardBaseStyle}>
+            <Card
+              className="shadcn-card-hover"
+              style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+            >
               <div>
-                <div style={{ ...iconBoxStyle('6, 182, 212'), marginBottom: '20px' }}>
-                  <Palette className="text-cyan" size={24} />
-                </div>
-                <h3
-                  className="font-bold"
-                  style={{ fontSize: '1.18rem', marginBottom: '12px', lineHeight: 1.35 }}
-                >
-                  Creative Arts &amp; Design
-                </h3>
-                <p className="text-secondary text-sm" style={{ lineHeight: 1.68 }}>
-                  Figma UI/UX Prototyping, Design Systems, Motion Graphics, 3D Modeling &amp; Digital
-                  Illustration.
-                </p>
+                <CardHeader>
+                  <div style={{ ...iconBoxStyle('6, 182, 212'), marginBottom: '14px' }}>
+                    <Palette className="text-cyan" size={22} />
+                  </div>
+                  <CardTitle>Creative Arts &amp; Design</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription style={{ lineHeight: 1.68 }}>
+                    Figma UI/UX Prototyping, Design Systems, Motion Graphics, 3D Modeling &amp;
+                    Digital Illustration.
+                  </CardDescription>
+                </CardContent>
               </div>
-              <div className="tags" style={{ marginTop: '8px' }}>
-                <span className="tag tag-cyan">Figma UI/UX</span>
-                <span className="tag tag-cyan">3D &amp; Motion</span>
-              </div>
-            </div>
+              <CardFooter style={{ gap: '8px', flexWrap: 'wrap' }}>
+                <Badge variant="cyan">Figma UI/UX</Badge>
+                <Badge variant="cyan">3D &amp; Motion</Badge>
+              </CardFooter>
+            </Card>
 
-            <div className="glass-card" style={cardBaseStyle}>
+            <Card
+              className="shadcn-card-hover"
+              style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+            >
               <div>
-                <div style={{ ...iconBoxStyle('245, 158, 11'), marginBottom: '20px' }}>
-                  <Languages className="text-amber" size={24} />
-                </div>
-                <h3
-                  className="font-bold"
-                  style={{ fontSize: '1.18rem', marginBottom: '12px', lineHeight: 1.35 }}
-                >
-                  Global Languages
-                </h3>
-                <p className="text-secondary text-sm" style={{ lineHeight: 1.68 }}>
-                  Conversational Japanese, Spanish, English Fluency, IELTS Speaking Practice &amp;
-                  Technical Writing.
-                </p>
+                <CardHeader>
+                  <div style={{ ...iconBoxStyle('245, 158, 11'), marginBottom: '14px' }}>
+                    <Languages className="text-amber" size={22} />
+                  </div>
+                  <CardTitle>Global Languages</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription style={{ lineHeight: 1.68 }}>
+                    Conversational Japanese, Spanish, English Fluency, IELTS Speaking Practice &amp;
+                    Technical Writing.
+                  </CardDescription>
+                </CardContent>
               </div>
-              <div className="tags" style={{ marginTop: '8px' }}>
-                <span className="tag tag-amber">Japanese</span>
-                <span className="tag tag-amber">IELTS &amp; English</span>
-              </div>
-            </div>
+              <CardFooter style={{ gap: '8px', flexWrap: 'wrap' }}>
+                <Badge variant="amber">Japanese</Badge>
+                <Badge variant="amber">IELTS &amp; English</Badge>
+              </CardFooter>
+            </Card>
 
-            <div className="glass-card" style={cardBaseStyle}>
+            <Card
+              className="shadcn-card-hover"
+              style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+            >
               <div>
-                <div style={{ ...iconBoxStyle('139, 92, 246'), marginBottom: '20px' }}>
-                  <BookOpen style={{ color: '#a78bfa' }} size={24} />
-                </div>
-                <h3
-                  className="font-bold"
-                  style={{ fontSize: '1.18rem', marginBottom: '12px', lineHeight: 1.35 }}
-                >
-                  Academics &amp; STEM Concepts
-                </h3>
-                <p className="text-secondary text-sm" style={{ lineHeight: 1.68 }}>
-                  Linear Algebra, Calculus, Physics Intuition, Statistics &amp; Research Methodology
-                  Tutoring.
-                </p>
+                <CardHeader>
+                  <div style={{ ...iconBoxStyle('139, 92, 246'), marginBottom: '14px' }}>
+                    <BookOpen style={{ color: '#a78bfa' }} size={22} />
+                  </div>
+                  <CardTitle>Academics &amp; STEM Concepts</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription style={{ lineHeight: 1.68 }}>
+                    Linear Algebra, Calculus, Physics Intuition, Statistics &amp; Research
+                    Methodology Tutoring.
+                  </CardDescription>
+                </CardContent>
               </div>
-              <div className="tags" style={{ marginTop: '8px' }}>
-                <span className="tag tag-violet">Calculus</span>
-                <span className="tag tag-violet">Linear Algebra</span>
-              </div>
-            </div>
+              <CardFooter style={{ gap: '8px', flexWrap: 'wrap' }}>
+                <Badge variant="violet">Calculus</Badge>
+                <Badge variant="violet">Linear Algebra</Badge>
+              </CardFooter>
+            </Card>
           </div>
         </section>
 
         {/* 5. BOTTOM CALL TO ACTION */}
-        <section
-          className="glass-card text-center"
+        <Card
+          className="text-center"
           style={{
             padding: '56px 40px',
             border: '1px solid rgba(16, 185, 129, 0.35)',
             background:
-              'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(15, 23, 42, 0.85) 100%)',
+              'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, #0c0c0f 100%)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center'
           }}
         >
-          <div style={{ ...iconBoxStyle('16, 185, 129'), width: '60px', height: '60px', marginBottom: '20px' }}>
-            <ShieldCheck className="text-emerald" size={30} />
+          <div
+            style={{
+              ...iconBoxStyle('16, 185, 129'),
+              width: '56px',
+              height: '56px',
+              marginBottom: '20px'
+            }}
+          >
+            <ShieldCheck className="text-emerald" size={28} />
           </div>
-          <h2 style={{ fontSize: '2.1rem', fontWeight: 800, marginBottom: '14px' }}>
+          <h2 style={{ fontSize: '2.1rem', fontWeight: 800, marginBottom: '12px' }}>
             Ready to Join the SkillSwap Barter Network?
           </h2>
           <p
@@ -797,7 +705,7 @@ export default function LandingPage() {
             style={{
               maxWidth: '580px',
               margin: '0 auto 32px',
-              fontSize: '1.02rem',
+              fontSize: '0.98rem',
               lineHeight: 1.68
             }}
           >
@@ -805,35 +713,31 @@ export default function LandingPage() {
             Create your free account now and get <strong>+100 Virtual Credits</strong> instantly.
           </p>
           <div className="flex items-center justify-center gap-4" style={{ flexWrap: 'wrap' }}>
-            <Link
-              href="/register"
-              className="btn btn-primary"
-              style={{ padding: '14px 30px', fontSize: '1rem', textDecoration: 'none' }}
-            >
-              <UserPlus size={18} />
-              <span>Create Free Account (+100 CR)</span>
+            <Link href="/register" style={{ textDecoration: 'none' }}>
+              <Button variant="default" size="lg">
+                <UserPlus size={18} />
+                <span>Create Free Account (+100 CR)</span>
+              </Button>
             </Link>
-            <Link
-              href="/login"
-              className="btn glass-btn"
-              style={{ padding: '14px 30px', fontSize: '1rem', textDecoration: 'none' }}
-            >
-              <LogIn size={18} />
-              <span>Sign In</span>
+            <Link href="/login" style={{ textDecoration: 'none' }}>
+              <Button variant="outline" size="lg">
+                <LogIn size={18} />
+                <span>Sign In</span>
+              </Button>
             </Link>
           </div>
-        </section>
+        </Card>
       </main>
 
       {/* Footer */}
       <footer
         style={{
-          borderTop: '1px solid var(--border-glass)',
+          borderTop: '1px solid var(--shadcn-border)',
           padding: '28px 32px',
           textAlign: 'center',
-          color: 'var(--text-secondary)',
-          fontSize: '0.88rem',
-          background: 'rgba(11, 15, 25, 0.9)'
+          color: 'var(--shadcn-muted-fg)',
+          fontSize: '0.85rem',
+          background: '#09090b'
         }}
       >
         SkillSwap • Decentralized Peer-to-Peer Knowledge Exchange &amp; Virtual Credit Escrow

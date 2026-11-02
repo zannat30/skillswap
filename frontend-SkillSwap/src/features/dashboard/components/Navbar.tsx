@@ -5,6 +5,12 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Search, Wallet, ChevronDown, Shield, User as UserIcon, LogOut } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
+import { Card } from '@/components/ui/card';
 
 export function Navbar() {
   const pathname = usePathname();
@@ -48,144 +54,157 @@ export function Navbar() {
   if (!user) return null;
 
   return (
-    <header className="navbar">
-      <div className="search-bar">
-        <Search className="search-icon" />
-        <input
+    <header
+      className="navbar"
+      style={{
+        background: 'rgba(9, 9, 11, 0.85)',
+        borderBottom: '1px solid var(--shadcn-border)'
+      }}
+    >
+      <div className="search-bar" style={{ position: 'relative', maxWidth: '420px', width: '100%' }}>
+        <Search
+          size={15}
+          style={{
+            position: 'absolute',
+            left: '12px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            color: 'var(--shadcn-muted-fg)',
+            pointerEvents: 'none'
+          }}
+        />
+        <Input
           type="text"
           value={searchQuery}
           onChange={handleSearchChange}
           placeholder="Search skills, mentors, or domains..."
+          style={{ paddingLeft: '36px' }}
         />
       </div>
+
       <div className="nav-actions">
-        <Link
-          href="/profile"
-          className="credit-wallet"
-          title={`Locked in Escrow: ${lockedInEscrow} CR`}
-        >
-          <Wallet />
-          <span>{availableCredits} Credits</span>
-          {lockedInEscrow > 0 && (
-            <span
-              style={{
-                fontSize: '0.7rem',
-                color: 'var(--accent-amber)',
-                marginLeft: '4px',
-                opacity: 0.9
-              }}
-            >
-              ({lockedInEscrow} Locked)
-            </span>
-          )}
+        <Link href="/profile" style={{ textDecoration: 'none' }}>
+          <Badge
+            variant="emerald"
+            style={{
+              padding: '7px 14px',
+              fontSize: '0.82rem',
+              cursor: 'pointer',
+              gap: '6px'
+            }}
+            title={`Locked in Escrow: ${lockedInEscrow} CR`}
+          >
+            <Wallet size={14} />
+            <span>{availableCredits} Credits</span>
+            {lockedInEscrow > 0 && (
+              <span style={{ color: '#fbbf24', marginLeft: '4px' }}>
+                ({lockedInEscrow} Locked)
+              </span>
+            )}
+          </Badge>
         </Link>
 
-        {/* Authenticated User Profile Menu */}
+        {/* Authenticated User Profile Popover Menu (shadcn/ui) */}
         <div ref={menuRef} style={{ position: 'relative' }}>
           <button
             type="button"
             onClick={() => setMenuOpen((prev) => !prev)}
-            className="user-profile"
             style={{
-              background: 'rgba(15, 23, 42, 0.7)',
-              border: '1px solid var(--border-glass)',
-              borderRadius: '24px',
-              padding: '4px 10px 4px 4px',
+              background: '#121216',
+              border: '1px solid var(--shadcn-border)',
+              borderRadius: '9999px',
+              padding: '4px 12px 4px 4px',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
               cursor: 'pointer',
-              color: 'var(--text-primary)'
+              color: 'var(--shadcn-fg)'
             }}
           >
-            <div className="avatar">{user.initials || 'U'}</div>
+            <Avatar style={{ height: '30px', width: '30px' }}>
+              <AvatarFallback style={{ fontSize: '0.78rem', background: '#27272a' }}>
+                {user.initials || 'U'}
+              </AvatarFallback>
+            </Avatar>
             <div style={{ textAlign: 'left', lineHeight: 1.15 }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 600 }}>
-                {user.displayName}
-              </div>
+              <div style={{ fontSize: '0.8rem', fontWeight: 600 }}>{user.displayName}</div>
               <div
                 style={{
                   fontSize: '0.65rem',
                   color:
-                    user.role === 'ADMIN'
-                      ? 'var(--accent-amber)'
-                      : 'var(--accent-emerald)'
+                    user.role === 'ADMIN' ? 'var(--accent-amber)' : 'var(--accent-emerald-light)'
                 }}
               >
                 {user.role === 'ADMIN' ? 'SUPER ADMIN' : 'MEMBER'}
               </div>
             </div>
-            <ChevronDown size={14} style={{ color: 'var(--text-secondary)' }} />
+            <ChevronDown size={14} style={{ color: 'var(--shadcn-muted-fg)' }} />
           </button>
 
           {menuOpen && (
-            <div
-              className="glass-panel"
+            <Card
               style={{
                 position: 'absolute',
                 right: 0,
                 top: 'calc(100% + 8px)',
-                width: '240px',
+                width: '250px',
                 padding: '12px',
-                borderRadius: '14px',
-                zIndex: 100,
-                boxShadow: '0 16px 40px rgba(0,0,0,0.6)'
+                zIndex: 100
               }}
             >
-              <div style={{ padding: '4px 6px 8px' }}>
+              <div style={{ padding: '4px 6px 10px' }}>
                 <div className="font-bold text-sm">{user.displayName}</div>
                 <div className="text-xs text-secondary">{user.email}</div>
               </div>
 
-              <hr className="glass-divider my-2" />
+              <Separator style={{ marginBottom: '10px' }} />
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <Link
                   href="/profile"
                   onClick={() => setMenuOpen(false)}
-                  className="btn glass-btn w-full"
-                  style={{
-                    justifyContent: 'flex-start',
-                    padding: '8px 10px',
-                    fontSize: '0.8rem',
-                    textDecoration: 'none'
-                  }}
+                  style={{ textDecoration: 'none' }}
                 >
-                  <UserIcon size={14} /> My Profile &amp; Wallet
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full"
+                    style={{ justifyContent: 'flex-start' }}
+                  >
+                    <UserIcon size={14} /> My Profile &amp; Wallet
+                  </Button>
                 </Link>
 
                 {user.role === 'ADMIN' && (
                   <Link
                     href="/admin/disputes"
                     onClick={() => setMenuOpen(false)}
-                    className="btn glass-btn w-full"
-                    style={{
-                      justifyContent: 'flex-start',
-                      padding: '8px 10px',
-                      fontSize: '0.8rem',
-                      textDecoration: 'none',
-                      color: 'var(--accent-amber)'
-                    }}
+                    style={{ textDecoration: 'none' }}
                   >
-                    <Shield size={14} /> Admin Console
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full"
+                      style={{ justifyContent: 'flex-start', color: '#fbbf24' }}
+                    >
+                      <Shield size={14} /> Admin Console
+                    </Button>
                   </Link>
                 )}
 
-                <button
+                <Separator style={{ margin: '4px 0' }} />
+
+                <Button
                   type="button"
+                  variant="destructive"
+                  size="sm"
                   onClick={handleLogout}
-                  className="btn btn-danger w-full"
-                  style={{
-                    justifyContent: 'center',
-                    padding: '8px 10px',
-                    fontSize: '0.8rem',
-                    marginTop: '4px'
-                  }}
+                  className="w-full"
                 >
                   <LogOut size={14} /> Sign Out
-                </button>
+                </Button>
               </div>
-            </div>
+            </Card>
           )}
         </div>
       </div>

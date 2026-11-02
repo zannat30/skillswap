@@ -3,11 +3,23 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { LogIn, ArrowLeft, AlertCircle } from 'lucide-react';
 import { apiRequest } from '@/lib/apiClient';
 import { loginSchema } from '@/lib/validators';
 import { useAuth } from '@/context/AuthContext';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter
+} from '@/components/ui/card';
 
 export function LoginForm() {
   const router = useRouter();
@@ -49,30 +61,32 @@ export function LoginForm() {
   };
 
   return (
-    <div className="modal-content glass-panel" style={{ maxWidth: '420px' }}>
-      <div className="modal-header">
-        <Link
-          href="/"
-          className="brand"
-          style={{ border: 'none', padding: 0, height: 'auto', textDecoration: 'none' }}
-        >
-          <div className="logo-box">S</div>
-          <h2>
-            Skill<span>Swap</span>
-          </h2>
-        </Link>
-      </div>
-      <div className="modal-body">
-        <h3 className="text-lg font-bold mb-2">Sign In to Your Account</h3>
-        <p className="text-secondary text-sm mb-4">
+    <Card style={{ width: '100%', maxWidth: '430px' }}>
+      <CardHeader style={{ borderBottom: '1px solid var(--shadcn-border)', paddingBottom: '20px' }}>
+        <div className="flex-between" style={{ marginBottom: '12px' }}>
+          <Link
+            href="/"
+            className="brand"
+            style={{ border: 'none', padding: 0, height: 'auto', textDecoration: 'none' }}
+          >
+            <div className="logo-box">S</div>
+            <h2>
+              Skill<span>Swap</span>
+            </h2>
+          </Link>
+        </div>
+        <CardTitle style={{ fontSize: '1.35rem' }}>Sign In to Your Account</CardTitle>
+        <CardDescription>
           Enter your credentials to access your Escrow Wallet and Mentorship Workspace.
-        </p>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-3">
-            <label className="text-xs text-secondary uppercase block mb-2">
-              Email Address
-            </label>
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent style={{ paddingTop: '24px' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <div>
+            <Label htmlFor="login-email">Email Address</Label>
             <Input
+              id="login-email"
               type="email"
               placeholder="you@example.com"
               value={email}
@@ -80,11 +94,11 @@ export function LoginForm() {
               required
             />
           </div>
-          <div className="mb-4">
-            <label className="text-xs text-secondary uppercase block mb-2">
-              Password
-            </label>
+
+          <div>
+            <Label htmlFor="login-password">Password</Label>
             <Input
+              id="login-password"
               type="password"
               placeholder="Enter your password"
               value={password}
@@ -92,28 +106,39 @@ export function LoginForm() {
               required
             />
           </div>
-          {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={submitting}
-            className="w-full justify-center"
-          >
-            {submitting ? 'Signing In...' : 'Sign In'}
+
+          {error && (
+            <Alert variant="destructive">
+              <div className="flex items-center gap-2">
+                <AlertCircle size={16} />
+                <AlertDescription>{error}</AlertDescription>
+              </div>
+            </Alert>
+          )}
+
+          <Button type="submit" variant="default" size="lg" disabled={submitting} className="w-full">
+            <LogIn size={16} />
+            <span>{submitting ? 'Signing In...' : 'Sign In'}</span>
           </Button>
         </form>
-        <p className="text-secondary text-sm text-center mt-4">
+      </CardContent>
+
+      <CardFooter style={{ flexDirection: 'column', gap: '10px', textAlign: 'center' }}>
+        <p className="text-secondary text-sm">
           New to SkillSwap?{' '}
-          <Link href="/register" className="text-emerald">
+          <Link href="/register" className="text-emerald font-bold" style={{ textDecoration: 'none' }}>
             Create Account (+100 CR Bonus)
           </Link>
         </p>
-        <p className="text-secondary text-xs text-center mt-2">
-          <Link href="/" className="text-secondary">
-            ← Back to Landing Page
-          </Link>
-        </p>
-      </div>
-    </div>
+        <Link
+          href="/"
+          className="text-secondary text-xs flex items-center gap-2"
+          style={{ textDecoration: 'none' }}
+        >
+          <ArrowLeft size={13} />
+          <span>Back to Home</span>
+        </Link>
+      </CardFooter>
+    </Card>
   );
 }

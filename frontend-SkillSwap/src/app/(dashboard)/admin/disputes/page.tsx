@@ -9,12 +9,31 @@ import {
   Ban,
   Unlock,
   Trash2,
-  MessageSquare,
-  Shield
+  MessageSquare
 } from 'lucide-react';
 import { Session, AdminUserItem } from '@/types';
 import { apiRequest } from '@/lib/apiClient';
 import { useAuth } from '@/context/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter
+} from '@/components/ui/card';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell
+} from '@/components/ui/table';
 
 export default function AdminDisputesPage() {
   const { user, refreshProfile } = useAuth();
@@ -131,6 +150,9 @@ export default function AdminDisputesPage() {
     <section className="view active">
       <div className="flex-between mb-6" style={{ flexWrap: 'wrap', gap: '12px' }}>
         <div>
+          <Badge variant="amber" style={{ marginBottom: '8px' }}>
+            <ShieldAlert size={12} /> Super Admin Governance
+          </Badge>
           <h2 className="text-2xl font-bold">Admin Dispute &amp; Governance Console</h2>
           <p className="text-secondary mt-1">
             Inspect frozen 50 CR Escrow sessions, review workspace chat logs, and moderate accounts.
@@ -139,35 +161,22 @@ export default function AdminDisputesPage() {
       </div>
 
       {user?.role !== 'ADMIN' && (
-        <div
-          className="glass-panel p-6 border-radius-16 mb-6"
-          style={{ borderColor: 'var(--accent-amber)' }}
-        >
-          <div>
-            <h3 className="text-lg font-bold text-amber">
-              Administrator Privileges Required (RBAC Guard)
-            </h3>
-            <p className="text-secondary text-sm mt-1">
-              Access denied. Please sign in with the Super Admin account (
-              <code>admin@admin.com</code>) to access Escrow Arbitration &amp; User Moderation.
-            </p>
-          </div>
-        </div>
+        <Alert variant="amber" className="mb-6">
+          <AlertTitle>Administrator Privileges Required (RBAC Guard)</AlertTitle>
+          <AlertDescription>
+            Access denied. Please sign in with the Super Admin account (
+            <code>admin@admin.com</code>) to access Escrow Arbitration &amp; User Moderation.
+          </AlertDescription>
+        </Alert>
       )}
 
       {statusMsg && (
-        <div
-          className="glass-panel p-6 border-radius-16 mb-6 font-bold"
-          style={{
-            padding: '12px 16px',
-            color:
-              statusMsg.type === 'error' ? 'var(--accent-red)' : 'var(--accent-emerald)',
-            borderColor:
-              statusMsg.type === 'error' ? 'var(--accent-red)' : 'var(--accent-emerald)'
-          }}
+        <Alert
+          variant={statusMsg.type === 'error' ? 'destructive' : 'emerald'}
+          className="mb-6"
         >
-          {statusMsg.text}
-        </div>
+          <AlertDescription className="font-bold">{statusMsg.text}</AlertDescription>
+        </Alert>
       )}
 
       {/* Disputed Sessions Queue (Features #51, #52, #53) */}
@@ -177,34 +186,42 @@ export default function AdminDisputesPage() {
       </h3>
 
       {disputes.length === 0 ? (
-        <div className="glass-panel p-6 border-radius-16 mb-6">
-          <div className="flex items-center gap-3">
-            <ShieldAlert className="text-emerald" />
+        <Card className="mb-6">
+          <CardHeader style={{ flexDirection: 'row', alignItems: 'center', gap: '14px' }}>
+            <ShieldAlert className="text-emerald" size={24} />
             <div>
-              <h4 className="font-bold">Zero Frozen Disputes</h4>
-              <p className="text-secondary text-sm">
+              <CardTitle style={{ fontSize: '1rem' }}>Zero Frozen Disputes</CardTitle>
+              <CardDescription>
                 All mentorship escrow sessions are operating smoothly. Raise a dispute from{' '}
                 <strong>Active Sessions → End Session → Didn&apos;t Learn (Dispute)</strong> to test
                 arbitration here.
-              </p>
+              </CardDescription>
             </div>
-          </div>
-        </div>
+          </CardHeader>
+        </Card>
       ) : (
         <div className="mentors-grid mb-6">
           {disputes.map((d) => (
-            <div key={d._id} className="glass-card">
-              <div className="card-header">
+            <Card key={d._id}>
+              <CardHeader
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  borderBottom: '1px solid var(--shadcn-border)'
+                }}
+              >
                 <div>
-                  <h4>{d.skillName}</h4>
-                  <p className="text-xs text-secondary mt-1">
+                  <CardTitle>{d.skillName}</CardTitle>
+                  <CardDescription className="mt-1">
                     Learner: <strong>{d.learnerName}</strong> | Mentor:{' '}
                     <strong>{d.mentorName}</strong>
-                  </p>
+                  </CardDescription>
                 </div>
-                <span className="badge">{d.creditsLocked} CR FROZEN</span>
-              </div>
-              <div className="card-body">
+                <Badge variant="amber">{d.creditsLocked} CR FROZEN</Badge>
+              </CardHeader>
+
+              <CardContent style={{ paddingTop: '18px' }}>
                 <p className="text-sm text-amber mb-3">
                   <strong>Dispute Reason:</strong>{' '}
                   {d.disputeReason || 'Learner reported unsatisfied session delivery.'}
@@ -215,11 +232,11 @@ export default function AdminDisputesPage() {
                   <div
                     className="mb-4"
                     style={{
-                      background: 'rgba(11, 15, 25, 0.65)',
-                      border: '1px solid var(--border-glass)',
-                      borderRadius: '10px',
-                      padding: '8px 10px',
-                      maxHeight: '110px',
+                      background: '#09090b',
+                      border: '1px solid var(--shadcn-border)',
+                      borderRadius: '8px',
+                      padding: '10px 12px',
+                      maxHeight: '120px',
                       overflowY: 'auto'
                     }}
                   >
@@ -227,146 +244,117 @@ export default function AdminDisputesPage() {
                       <MessageSquare size={12} /> Session Chat Transcript ({d.chatLogs.length})
                     </p>
                     {d.chatLogs.map((log, idx) => (
-                      <div key={log._id || idx} style={{ fontSize: '0.76rem', marginBottom: '4px' }}>
+                      <div key={log._id || idx} style={{ fontSize: '0.78rem', marginBottom: '4px' }}>
                         <strong className="text-emerald">{log.senderName}:</strong>{' '}
                         <span className="text-secondary">{log.messageText || log.text}</span>
                       </div>
                     ))}
                   </div>
                 )}
+              </CardContent>
 
-                <div className="flex gap-3" style={{ flexWrap: 'wrap' }}>
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => handleRefundLearner(d._id)}
-                    type="button"
-                  >
-                    <RotateCcw size={16} /> Approve Refund (+50 CR Learner)
-                  </button>
-                  <button
-                    className="btn glass-btn"
-                    onClick={() => handleReleaseToMentor(d._id)}
-                    type="button"
-                  >
-                    <CheckCircle size={16} /> Release to Mentor (+45 CR / 5 Burn)
-                  </button>
-                </div>
-              </div>
-            </div>
+              <CardFooter style={{ gap: '10px', flexWrap: 'wrap' }}>
+                <Button variant="default" size="sm" onClick={() => handleRefundLearner(d._id)}>
+                  <RotateCcw size={14} /> Approve Refund (+50 CR Learner)
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => handleReleaseToMentor(d._id)}>
+                  <CheckCircle size={14} /> Release to Mentor (+45 CR / 5 Burn)
+                </Button>
+              </CardFooter>
+            </Card>
           ))}
         </div>
       )}
 
-      {/* User Governance & Ban Moderation Table (Feature #54) */}
+      {/* User Governance & Ban/Remove Moderation Table (Features #54 & #55) */}
       <h3 className="text-lg font-bold mb-3 mt-6 flex items-center gap-2">
         <Users size={18} className="text-emerald" /> User Account Moderation &amp; Policy
         Enforcement
       </h3>
 
-      <div className="glass-panel p-6 border-radius-16">
-        <div className="table-container">
-          <table className="ledger-table">
-            <thead>
-              <tr>
-                <th>User</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Wallet</th>
-                <th>Status</th>
-                <th className="text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {usersList.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="text-secondary text-sm">
-                    {isLoading
-                      ? 'Loading platform users...'
-                      : 'Switch to Admin Role above to load and moderate user accounts.'}
-                  </td>
-                </tr>
-              ) : (
-                usersList.map((u) => (
-                  <tr key={u._id}>
-                    <td>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="avatar"
-                          style={{ width: '28px', height: '28px', fontSize: '0.75rem' }}
-                        >
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>User</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Wallet</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {usersList.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-secondary text-sm">
+                  {isLoading
+                    ? 'Loading platform users...'
+                    : 'Sign in as Super Admin to view and moderate user accounts.'}
+                </TableCell>
+              </TableRow>
+            ) : (
+              usersList.map((u) => (
+                <TableRow key={u._id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar style={{ height: '30px', width: '30px' }}>
+                        <AvatarFallback style={{ fontSize: '0.75rem' }}>
                           {u.initials}
-                        </div>
-                        <span className="font-bold">{u.displayName}</span>
-                      </div>
-                    </td>
-                    <td className="text-secondary text-sm">{u.email}</td>
-                    <td>
-                      <span
-                        className={`badge-type ${
-                          u.role === 'ADMIN' ? 'badge-lock' : 'badge-bonus'
-                        }`}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-bold">{u.displayName}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-secondary text-sm">{u.email}</TableCell>
+                  <TableCell>
+                    <Badge variant={u.role === 'ADMIN' ? 'amber' : 'violet'}>
+                      {u.role}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-emerald font-bold">{u.credits} CR</TableCell>
+                  <TableCell>
+                    <Badge variant={u.isBanned ? 'destructive' : 'emerald'}>
+                      {u.isBanned ? 'BANNED' : 'ACTIVE'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {u.role !== 'ADMIN' && (
+                      <div
+                        className="flex items-center gap-2"
+                        style={{ justifyContent: 'flex-end' }}
                       >
-                        {u.role}
-                      </span>
-                    </td>
-                    <td className="text-emerald font-bold">{u.credits} CR</td>
-                    <td>
-                      <span
-                        className={`badge-type ${
-                          u.isBanned ? 'badge-burn' : 'badge-release'
-                        }`}
-                      >
-                        {u.isBanned ? 'BANNED' : 'ACTIVE'}
-                      </span>
-                    </td>
-                    <td className="text-right">
-                      {u.role !== 'ADMIN' && (
-                        <div
-                          className="flex items-center gap-2"
-                          style={{ justifyContent: 'flex-end' }}
+                        <Button
+                          variant={u.isBanned ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handleToggleBanUser(u)}
                         >
-                          <button
-                            type="button"
-                            onClick={() => handleToggleBanUser(u)}
-                            className={`btn ${u.isBanned ? 'btn-primary' : 'glass-btn'}`}
-                            style={{
-                              padding: '5px 10px',
-                              fontSize: '0.75rem',
-                              display: 'inline-flex'
-                            }}
-                          >
-                            {u.isBanned ? (
-                              <>
-                                <Unlock size={13} /> Unban User
-                              </>
-                            ) : (
-                              <>
-                                <Ban size={13} /> Ban User
-                              </>
-                            )}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveUser(u)}
-                            className="btn btn-danger"
-                            style={{
-                              padding: '5px 10px',
-                              fontSize: '0.75rem',
-                              display: 'inline-flex'
-                            }}
-                          >
-                            <Trash2 size={13} /> Remove User
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                          {u.isBanned ? (
+                            <>
+                              <Unlock size={13} /> Unban User
+                            </>
+                          ) : (
+                            <>
+                              <Ban size={13} /> Ban User
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleRemoveUser(u)}
+                        >
+                          <Trash2 size={13} /> Remove User
+                        </Button>
+                      </div>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </Card>
     </section>
   );
 }

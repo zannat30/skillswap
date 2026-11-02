@@ -3,6 +3,16 @@
 import React from 'react';
 import { Star, Coins, Sparkles, Eye } from 'lucide-react';
 import { Mentor } from '@/types';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardFooter
+} from '@/components/ui/card';
 
 interface MentorCardProps {
   mentor: Mentor;
@@ -12,83 +22,103 @@ interface MentorCardProps {
 
 export function MentorCard({ mentor, onBook, onViewProfile }: MentorCardProps) {
   return (
-    <div className="mentor-card glass-card">
-      <div className="card-header">
-        <div
-          className="mentor-info"
-          style={{ cursor: onViewProfile ? 'pointer' : 'default' }}
-          onClick={() => onViewProfile && onViewProfile(mentor)}
-          title="Click to view full mentor profile & learner reviews"
+    <Card
+      className="shadcn-card-hover"
+      style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+    >
+      <div>
+        <CardHeader
+          style={{
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            borderBottom: '1px solid var(--shadcn-border)',
+            padding: '20px 22px'
+          }}
         >
-          <div className="avatar-sm">{mentor.initials}</div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h4>{mentor.name || mentor.displayName}</h4>
-              {mentor.isBarterMatch && (
-                <span
-                  className="tag tag-emerald"
-                  style={{ fontSize: '0.65rem', padding: '2px 6px' }}
-                  title="Bidirectional Skill Swap Match!"
-                >
-                  <Sparkles size={10} style={{ display: 'inline', marginRight: '3px' }} />
-                  Swap Match
-                </span>
+          <div
+            className="flex items-center gap-3"
+            style={{ cursor: onViewProfile ? 'pointer' : 'default' }}
+            onClick={() => onViewProfile && onViewProfile(mentor)}
+            title="Click to view full mentor profile & learner reviews"
+          >
+            <Avatar>
+              <AvatarFallback
+                style={{
+                  background: 'linear-gradient(135deg, var(--accent-cyan), var(--accent-emerald))',
+                  color: '#fff'
+                }}
+              >
+                {mentor.initials}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <div className="flex items-center gap-2" style={{ flexWrap: 'wrap' }}>
+                <CardTitle style={{ fontSize: '1.02rem' }}>
+                  {mentor.name || mentor.displayName}
+                </CardTitle>
+                {mentor.isBarterMatch && (
+                  <Badge variant="emerald" style={{ fontSize: '0.68rem', padding: '2px 7px' }}>
+                    <Sparkles size={10} /> Swap Match
+                  </Badge>
+                )}
+              </div>
+              <div className="rating" style={{ marginTop: '4px' }}>
+                <Star size={12} fill="currentColor" /> {mentor.rating} (
+                {mentor.sessions ?? mentor.totalSessions} sessions)
+              </div>
+            </div>
+          </div>
+
+          <Badge variant="emerald" style={{ padding: '5px 10px', fontSize: '0.8rem' }}>
+            50 <Coins size={13} />
+          </Badge>
+        </CardHeader>
+
+        <CardContent style={{ padding: '20px 22px' }}>
+          <div className="skill-group">
+            <span className="label">Teaches:</span>
+            <div className="tags">
+              {mentor.skillsHave.map((skill, idx) => (
+                <Badge key={idx} variant="emerald">
+                  {skill}
+                </Badge>
+              ))}
+            </div>
+          </div>
+
+          <div className="skill-group mt-3">
+            <span className="label">Wants to learn:</span>
+            <div className="tags">
+              {mentor.skillsWant.length === 0 ? (
+                <span className="text-xs text-secondary">Open to all peer skills</span>
+              ) : (
+                mentor.skillsWant.map((skill, idx) => (
+                  <Badge key={idx} variant="violet">
+                    {skill}
+                  </Badge>
+                ))
               )}
             </div>
-            <div className="rating">
-              <Star size={12} fill="currentColor" /> {mentor.rating} (
-              {mentor.sessions ?? mentor.totalSessions} sessions)
-            </div>
           </div>
-        </div>
-        <div className="rate-badge">
-          50 <Coins size={14} />
-        </div>
+        </CardContent>
       </div>
 
-      <div className="card-body">
-        <div className="skill-group">
-          <span className="label">Teaches:</span>
-          <div className="tags">
-            {mentor.skillsHave.map((skill, idx) => (
-              <span key={idx} className="tag tag-emerald">
-                {skill}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div className="skill-group mt-3">
-          <span className="label">Wants to learn:</span>
-          <div className="tags">
-            {mentor.skillsWant.map((skill, idx) => (
-              <span key={idx} className="tag tag-violet">
-                {skill}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="card-footer flex gap-2">
+      <CardFooter style={{ gap: '10px', padding: '14px 22px' }}>
         {onViewProfile && (
-          <button
-            className="btn glass-btn"
+          <Button
+            variant="outline"
+            size="default"
             onClick={() => onViewProfile(mentor)}
-            type="button"
-            style={{ padding: '10px 14px' }}
             title="Inspect Bio, Schedule & Reviews"
           >
-            <Eye size={16} /> Profile
-          </button>
+            <Eye size={15} /> Profile
+          </Button>
         )}
-        <button
-          className="btn btn-primary w-full justify-center"
-          onClick={() => onBook(mentor)}
-          type="button"
-        >
-          Book Session
-        </button>
-      </div>
-    </div>
+        <Button variant="default" size="default" className="w-full" onClick={() => onBook(mentor)}>
+          Book Session (50 CR)
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }

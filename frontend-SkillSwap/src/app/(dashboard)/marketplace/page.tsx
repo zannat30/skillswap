@@ -2,11 +2,33 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Sparkles, Star, Calendar, AlertTriangle, MessageSquare } from 'lucide-react';
+import { Sparkles, Star, Calendar, AlertTriangle, MessageSquare } from 'lucide-react';
 import { Mentor, AvailabilitySlot, ReviewItem } from '@/types';
 import { MentorCard } from '@/features/marketplace/components/MentorCard';
 import { apiRequest } from '@/lib/apiClient';
 import { useAuth } from '@/context/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription
+} from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog';
 
 export default function MarketplacePage() {
   const router = useRouter();
@@ -187,75 +209,46 @@ export default function MarketplacePage() {
   return (
     <>
       <section className="view active">
-        <div className="hero-section text-center">
-          <h1 className="hero-title">
+        <div className="hero-section text-center" style={{ margin: '28px auto 32px' }}>
+          <Badge variant="emerald" style={{ marginBottom: '6px' }}>
+            <Sparkles size={12} /> Peer-to-Peer Skill Marketplace
+          </Badge>
+          <h1 className="hero-title" style={{ fontSize: '2.6rem' }}>
             Welcome to <span className="text-gradient">SkillSwap</span>
           </h1>
           <p className="hero-subtitle">
-            Trade skills instead of money using our secure escrow logic.
+            Trade skills instead of money using our atomic 50 CR virtual escrow logic.
           </p>
         </div>
 
-        <div className="category-tabs" style={{ flexWrap: 'wrap' }}>
-          <button
-            className={`tab-btn ${activeCategory === 'all' ? 'active' : ''}`}
-            data-category="all"
-            onClick={() => setActiveCategory('all')}
-            type="button"
-          >
-            All Domains
-          </button>
-          <button
-            className={`tab-btn ${activeCategory === 'technology' ? 'active' : ''}`}
-            data-category="technology"
-            onClick={() => setActiveCategory('technology')}
-            type="button"
-          >
-            Technology
-          </button>
-          <button
-            className={`tab-btn ${activeCategory === 'creative' ? 'active' : ''}`}
-            data-category="creative"
-            onClick={() => setActiveCategory('creative')}
-            type="button"
-          >
-            Creative Arts
-          </button>
-          <button
-            className={`tab-btn ${activeCategory === 'languages' ? 'active' : ''}`}
-            data-category="languages"
-            onClick={() => setActiveCategory('languages')}
-            type="button"
-          >
-            Languages
-          </button>
-          <button
-            className={`tab-btn ${activeCategory === 'academic' ? 'active' : ''}`}
-            data-category="academic"
-            onClick={() => setActiveCategory('academic')}
-            type="button"
-          >
-            Academics
-          </button>
-          <button
-            className={`tab-btn ${activeCategory === 'matches' ? 'active' : ''}`}
-            data-category="matches"
-            onClick={() => setActiveCategory('matches')}
-            type="button"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-          >
-            <Sparkles size={14} /> Barter Matches ({barterMatches.length})
-          </button>
+        {/* shadcn/ui Segmented Category Tabs */}
+        <div className="flex justify-center mb-6">
+          <Tabs value={activeCategory} onValueChange={setActiveCategory}>
+            <TabsList>
+              <TabsTrigger value="all">All Domains</TabsTrigger>
+              <TabsTrigger value="technology">Technology</TabsTrigger>
+              <TabsTrigger value="creative">Creative Arts</TabsTrigger>
+              <TabsTrigger value="languages">Languages</TabsTrigger>
+              <TabsTrigger value="academic">Academics</TabsTrigger>
+              <TabsTrigger value="matches">
+                <Sparkles size={13} className="text-emerald" /> Barter Matches (
+                {barterMatches.length})
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
         {filteredMentors.length === 0 ? (
-          <div className="glass-panel p-6 border-radius-16 text-center">
-            <h4 className="font-bold text-lg mb-2">No Mentors Found</h4>
-            <p className="text-secondary text-sm">
-              No mentors have listed teaching skills in this category yet. When registered users add
-              skills under <strong>My Profile → Skills I Have</strong>, they will appear here automatically.
-            </p>
-          </div>
+          <Card className="text-center" style={{ padding: '40px 24px' }}>
+            <CardHeader>
+              <CardTitle>No Mentors Found</CardTitle>
+              <CardDescription style={{ maxWidth: '520px', margin: '6px auto 0' }}>
+                No mentors have listed teaching skills in this category yet. When registered users
+                add skills under <strong>My Profile → Skills I Have</strong>, they will appear here
+                automatically.
+              </CardDescription>
+            </CardHeader>
+          </Card>
         ) : (
           <div className="mentors-grid" id="mentors-grid">
             {filteredMentors.map((mentor) => (
@@ -270,226 +263,158 @@ export default function MarketplacePage() {
         )}
       </section>
 
-      {/* Booking Modal (#booking-modal) */}
-      <div
-        className={`modal-overlay ${isModalOpen ? 'active' : ''}`}
-        id="booking-modal"
-      >
-        <div className="modal-content glass-panel">
-          <div className="modal-header">
-            <h3>Book Session</h3>
-            <button
-              className="icon-btn close-modal"
-              onClick={() => setIsModalOpen(false)}
-              type="button"
-            >
-              <X size={20} />
-            </button>
-          </div>
-          <div className="modal-body">
-            <div className="escrow-details">
-              <p className="text-secondary mb-3">
-                Booking 60-min session with{' '}
-                <strong id="modal-mentor-name" className="text-primary">
-                  {selectedMentor?.name || 'Mentor'}
-                </strong>{' '}
-                ({selectedMentor?.domain}).
-              </p>
+      {/* shadcn/ui Booking Dialog */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent onClose={() => setIsModalOpen(false)}>
+          <DialogHeader>
+            <DialogTitle>Book 60-Min Mentorship Session</DialogTitle>
+            <DialogDescription>
+              Booking with{' '}
+              <strong className="text-primary">{selectedMentor?.name || 'Mentor'}</strong> (
+              {selectedMentor?.domain}).
+            </DialogDescription>
+          </DialogHeader>
 
-              {/* Select Skill / Topic */}
-              <div className="mb-3">
-                <label className="text-xs text-secondary uppercase block mb-1">
-                  Select Skill to Learn
-                </label>
-                <select
-                  value={selectedSkillTopic}
-                  onChange={(e) => setSelectedSkillTopic(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '9px 12px',
-                    borderRadius: '10px',
-                    background: 'var(--bg-obsidian)',
-                    border: '1px solid var(--border-glass)',
-                    color: 'var(--text-primary)',
-                    fontSize: '0.85rem'
-                  }}
-                >
-                  {(selectedMentor?.skillsHave || ['React.js']).map((sk, idx) => (
-                    <option key={idx} value={`${sk} Mentorship`}>
-                      {sk} Mentorship ({selectedMentor?.domain})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Custom Session Goal / Topic Input (Also tests 403 FORBIDDEN_DOMAIN) */}
-              <div className="mb-3">
-                <label className="text-xs text-secondary uppercase block mb-1">
-                  Specific Learning Topic (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={customTopic}
-                  onChange={(e) => setCustomTopic(e.target.value)}
-                  placeholder="e.g. Redux Toolkit State Architecture..."
-                  style={{
-                    width: '100%',
-                    padding: '9px 12px',
-                    borderRadius: '10px',
-                    background: 'var(--bg-obsidian)',
-                    border: '1px solid var(--border-glass)',
-                    color: 'var(--text-primary)',
-                    fontSize: '0.85rem'
-                  }}
-                />
-              </div>
-
-              {/* Select Available Time Slot (Feature #21 & #28) */}
-              <div className="mb-4">
-                <label className="text-xs text-secondary uppercase block mb-1">
-                  Select Mentor Time Slot (60 Min)
-                </label>
-                <select
-                  value={selectedDateSlot}
-                  onChange={(e) => setSelectedDateSlot(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '9px 12px',
-                    borderRadius: '10px',
-                    background: 'var(--bg-obsidian)',
-                    border: '1px solid var(--border-glass)',
-                    color: 'var(--text-primary)',
-                    fontSize: '0.85rem'
-                  }}
-                >
-                  {mentorSlots.length === 0 ? (
-                    <option value="">Immediate / Flexible 60-Min Slot</option>
-                  ) : (
-                    mentorSlots.flatMap((entry) =>
-                      entry.slots.map((s) => (
-                        <option key={`${entry.date}|${s}`} value={`${entry.date}|${s}`}>
-                          {entry.date} • {s}
-                        </option>
-                      ))
-                    )
-                  )}
-                </select>
-              </div>
-
-              <div className="credit-breakdown">
-                <div className="flex-between">
-                  <span>Session Cost</span>
-                  <span>50 Credits</span>
-                </div>
-                <div className="flex-between text-secondary text-sm mt-1">
-                  <span>Escrow Fee (10% Burn on Completion)</span>
-                  <span>5 Credits</span>
-                </div>
-                <div className="flex-between text-secondary text-sm mt-1">
-                  <span>Mentor Net Payout (90%)</span>
-                  <span>45 Credits</span>
-                </div>
-                <hr className="glass-divider my-3" />
-                <div className="flex-between font-bold text-amber">
-                  <span>Total Locked in Escrow</span>
-                  <span>50 Credits</span>
-                </div>
-              </div>
-
-              {bookingError && (
-                <div
-                  className="mt-3"
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: '10px',
-                    background: 'rgba(239, 68, 68, 0.12)',
-                    border: '1px solid var(--accent-red)',
-                    color: 'var(--accent-red)',
-                    fontSize: '0.82rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                >
-                  <AlertTriangle size={16} />
-                  <span>{bookingError}</span>
-                </div>
-              )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div>
+              <Label>Select Skill to Learn</Label>
+              <select
+                value={selectedSkillTopic}
+                onChange={(e) => setSelectedSkillTopic(e.target.value)}
+                className="shadcn-input"
+              >
+                {(selectedMentor?.skillsHave || ['React.js']).map((sk, idx) => (
+                  <option key={idx} value={`${sk} Mentorship`}>
+                    {sk} Mentorship ({selectedMentor?.domain})
+                  </option>
+                ))}
+              </select>
             </div>
+
+            <div>
+              <Label>Specific Learning Topic (Optional)</Label>
+              <Input
+                type="text"
+                value={customTopic}
+                onChange={(e) => setCustomTopic(e.target.value)}
+                placeholder="e.g. Redux Toolkit State Architecture..."
+              />
+            </div>
+
+            <div>
+              <Label>Select Mentor Time Slot (60 Min)</Label>
+              <select
+                value={selectedDateSlot}
+                onChange={(e) => setSelectedDateSlot(e.target.value)}
+                className="shadcn-input"
+              >
+                {mentorSlots.length === 0 ? (
+                  <option value="">Immediate / Flexible 60-Min Slot</option>
+                ) : (
+                  mentorSlots.flatMap((entry) =>
+                    entry.slots.map((s) => (
+                      <option key={`${entry.date}|${s}`} value={`${entry.date}|${s}`}>
+                        {entry.date} • {s}
+                      </option>
+                    ))
+                  )
+                )}
+              </select>
+            </div>
+
+            <div className="credit-breakdown">
+              <div className="flex-between text-sm">
+                <span>Session Cost</span>
+                <span className="font-bold">50 Credits</span>
+              </div>
+              <div className="flex-between text-secondary text-xs mt-1">
+                <span>Escrow Fee (10% Burn on Completion)</span>
+                <span>5 Credits</span>
+              </div>
+              <div className="flex-between text-secondary text-xs mt-1">
+                <span>Mentor Net Payout (90%)</span>
+                <span>45 Credits</span>
+              </div>
+              <Separator style={{ margin: '12px 0' }} />
+              <div className="flex-between font-bold text-amber text-sm">
+                <span>Total Locked in Escrow</span>
+                <span>50 Credits</span>
+              </div>
+            </div>
+
+            {bookingError && (
+              <Alert variant="destructive">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle size={16} />
+                  <AlertDescription>{bookingError}</AlertDescription>
+                </div>
+              </Alert>
+            )}
           </div>
-          <div className="modal-footer">
-            <button
-              className="btn glass-btn close-modal"
-              onClick={() => setIsModalOpen(false)}
-              type="button"
-            >
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
               Cancel
-            </button>
-            <button
-              className="btn btn-primary"
+            </Button>
+            <Button
+              variant="default"
               id="confirm-booking-btn"
               disabled={isBookingSubmitting}
               onClick={handleConfirmBooking}
-              type="button"
             >
               {isBookingSubmitting ? 'Locking Escrow...' : 'Confirm & Lock Credits'}
-            </button>
-          </div>
-        </div>
-      </div>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      {/* Public Mentor Profile & Reviews Modal (Features #10 & #38) */}
-      <div
-        className={`modal-overlay ${isProfileModalOpen ? 'active' : ''}`}
-        id="mentor-profile-modal"
-      >
-        <div className="modal-content glass-panel" style={{ maxWidth: '520px' }}>
-          <div className="modal-header">
+      {/* shadcn/ui Public Mentor Profile & Reviews Dialog */}
+      <Dialog open={isProfileModalOpen} onOpenChange={setIsProfileModalOpen}>
+        <DialogContent
+          onClose={() => setIsProfileModalOpen(false)}
+          style={{ maxWidth: '520px' }}
+        >
+          <DialogHeader>
             <div className="flex items-center gap-3">
-              <div className="avatar-sm">{inspectedMentor?.initials || 'M'}</div>
+              <Avatar>
+                <AvatarFallback
+                  style={{
+                    background: 'linear-gradient(135deg, var(--accent-cyan), var(--accent-emerald))',
+                    color: '#fff'
+                  }}
+                >
+                  {inspectedMentor?.initials || 'M'}
+                </AvatarFallback>
+              </Avatar>
               <div>
-                <h3>{inspectedMentor?.name || inspectedMentor?.displayName}</h3>
-                <p className="text-xs text-secondary">
+                <DialogTitle>{inspectedMentor?.name || inspectedMentor?.displayName}</DialogTitle>
+                <DialogDescription>
                   {inspectedMentor?.domain} • ★ {inspectedMentor?.rating} (
                   {inspectedMentor?.totalSessions} sessions)
-                </p>
+                </DialogDescription>
               </div>
             </div>
-            <button
-              className="icon-btn close-modal"
-              onClick={() => setIsProfileModalOpen(false)}
-              type="button"
-            >
-              <X size={20} />
-            </button>
-          </div>
+          </DialogHeader>
 
-          <div className="modal-body">
-            <p className="text-sm text-secondary mb-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            <p className="text-sm text-secondary" style={{ lineHeight: 1.6 }}>
               {inspectedMentor?.bio ||
                 `Verified ${inspectedMentor?.domain} mentor on SkillSwap with ${inspectedMentor?.totalSessions} completed 1-on-1 peer sessions.`}
             </p>
 
-            <div className="mb-4">
-              <h4 className="text-xs text-secondary uppercase mb-2 flex items-center gap-1">
+            <div>
+              <Label className="flex items-center gap-1 mb-2">
                 <Calendar size={13} /> Available 1-Hour Slots
-              </h4>
+              </Label>
               <div className="tags">
                 {(inspectedMentor?.availability || []).length === 0 ? (
                   <span className="text-xs text-secondary">Flexible scheduling available</span>
                 ) : (
                   (inspectedMentor?.availability || []).flatMap((a) =>
                     a.slots.map((s) => (
-                      <span
-                        key={`${a.date}-${s}`}
-                        className="tag"
-                        style={{
-                          background: 'rgba(6, 182, 212, 0.14)',
-                          color: 'var(--accent-cyan)'
-                        }}
-                      >
+                      <Badge key={`${a.date}-${s}`} variant="cyan">
                         {a.date} • {s}
-                      </span>
+                      </Badge>
                     ))
                   )
                 )}
@@ -497,71 +422,54 @@ export default function MarketplacePage() {
             </div>
 
             <div>
-              <h4 className="text-xs text-secondary uppercase mb-2 flex items-center gap-1">
+              <Label className="flex items-center gap-1 mb-2">
                 <MessageSquare size={13} /> Verified Learner Reviews ({inspectedReviews.length})
-              </h4>
+              </Label>
               {inspectedReviews.length === 0 ? (
-                <div
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: '10px',
-                    background: 'rgba(15, 23, 42, 0.5)',
-                    border: '1px solid var(--border-glass)',
-                    fontSize: '0.8rem',
-                    color: 'var(--text-secondary)'
-                  }}
-                >
-                  ★ {inspectedMentor?.rating} average rating across {inspectedMentor?.totalSessions}{' '}
-                  completed sessions. Complete a session with {inspectedMentor?.name} to post a new
-                  review!
-                </div>
+                <Alert>
+                  <AlertDescription>
+                    ★ {inspectedMentor?.rating} average rating across{' '}
+                    {inspectedMentor?.totalSessions} completed sessions. Complete a session with{' '}
+                    {inspectedMentor?.name} to post a new review!
+                  </AlertDescription>
+                </Alert>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {inspectedReviews.map((rev, i) => (
-                    <div
+                    <Card
                       key={rev.sessionId || i}
-                      style={{
-                        padding: '10px 12px',
-                        borderRadius: '10px',
-                        background: 'rgba(15, 23, 42, 0.5)',
-                        border: '1px solid var(--border-glass)'
-                      }}
+                      style={{ padding: '12px 14px', background: '#09090b' }}
                     >
                       <div className="flex-between mb-1">
                         <span className="font-bold text-sm">{rev.learnerName}</span>
-                        <span className="text-amber text-xs flex items-center gap-1">
-                          <Star size={12} fill="currentColor" /> {rev.rating}/5
-                        </span>
+                        <Badge variant="amber">
+                          <Star size={11} fill="currentColor" /> {rev.rating}/5
+                        </Badge>
                       </div>
                       <p className="text-xs text-secondary">{rev.comment}</p>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               )}
             </div>
           </div>
 
-          <div className="modal-footer">
-            <button
-              className="btn glass-btn"
-              onClick={() => setIsProfileModalOpen(false)}
-              type="button"
-            >
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsProfileModalOpen(false)}>
               Close
-            </button>
-            <button
-              className="btn btn-primary"
+            </Button>
+            <Button
+              variant="default"
               onClick={() => {
                 setIsProfileModalOpen(false);
                 if (inspectedMentor) handleOpenBookingModal(inspectedMentor);
               }}
-              type="button"
             >
               Book Session (50 CR)
-            </button>
-          </div>
-        </div>
-      </div>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

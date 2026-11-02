@@ -1,22 +1,44 @@
-/* Custom Properties & Reset (Exact match to css/style.css) */
+/* shadcn/ui Dark Theme Tokens + SkillSwap Design System */
 :root {
-    --bg-base: #0B0F19; /* Obsidian */
-    --bg-surface: #0f172a; /* Slate 900 */
-    --bg-glass: rgba(15, 23, 42, 0.6);
-    --border-glass: rgba(30, 41, 59, 0.5);
+    --bg-base: #09090b; /* Zinc 950 (shadcn background) */
+    --bg-surface: #0c0d12; /* Zinc 900/950 Card Surface */
+    --bg-glass: rgba(18, 18, 23, 0.78);
+    --border-glass: #27272a; /* Zinc 800 (shadcn 1px border) */
     
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
+    --text-primary: #fafafa; /* Zinc 50 (shadcn foreground) */
+    --text-secondary: #a1a1aa; /* Zinc 400 (shadcn muted-foreground) */
     
     --accent-emerald: #10b981;
     --accent-emerald-light: #34d399;
     --accent-cyan: #06b6d4;
     --accent-amber: #f59e0b;
     --accent-violet: #8b5cf6;
+
+    /* Official shadcn/ui CSS Variables */
+    --shadcn-bg: #09090b;
+    --shadcn-fg: #fafafa;
+    --shadcn-card: #0c0c0f;
+    --shadcn-card-fg: #fafafa;
+    --shadcn-popover: #09090b;
+    --shadcn-popover-fg: #fafafa;
+    --shadcn-primary: #10b981;
+    --shadcn-primary-fg: #022c22;
+    --shadcn-secondary: #18181b;
+    --shadcn-secondary-fg: #fafafa;
+    --shadcn-muted: #18181b;
+    --shadcn-muted-fg: #a1a1aa;
+    --shadcn-accent: #27272a;
+    --shadcn-accent-fg: #fafafa;
+    --shadcn-destructive: #ef4444;
+    --shadcn-destructive-fg: #fafafa;
+    --shadcn-border: #27272a;
+    --shadcn-input: #27272a;
+    --shadcn-ring: rgba(16, 185, 129, 0.45);
+    --shadcn-radius: 10px;
     
-    --font-sans: 'Inter', sans-serif;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     --sidebar-width: 260px;
-    --navbar-height: 70px;
+    --navbar-height: 68px;
 }
 
 * {
@@ -939,4 +961,483 @@ body {
     0% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(245,158,11,0.5)); }
     50% { transform: scale(1.1); filter: drop-shadow(0 0 15px rgba(245,158,11,0.8)); }
     100% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(245,158,11,0.5)); }
+}
+
+/* ==========================================================================
+   SHADCN/UI COMPONENT PRIMITIVES SYSTEM (@/components/ui/*)
+   ========================================================================== */
+
+/* 1. Button (shadcn/ui Button) */
+.shadcn-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    white-space: nowrap;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    font-family: inherit;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+    cursor: pointer;
+    border: 1px solid transparent;
+    text-decoration: none;
+    outline: none;
+    line-height: 1;
+}
+.shadcn-btn:focus-visible {
+    box-shadow: 0 0 0 2px var(--shadcn-bg), 0 0 0 4px var(--shadcn-ring);
+}
+.shadcn-btn:disabled {
+    pointer-events: none;
+    opacity: 0.5;
+}
+.shadcn-btn--default {
+    background-color: var(--shadcn-primary);
+    color: #022c22;
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 0 18px rgba(16, 185, 129, 0.22);
+}
+.shadcn-btn--default:hover {
+    background-color: #34d399;
+}
+.shadcn-btn--secondary {
+    background-color: var(--shadcn-secondary);
+    color: var(--shadcn-secondary-fg);
+    border-color: var(--shadcn-border);
+}
+.shadcn-btn--secondary:hover {
+    background-color: #27272a;
+}
+.shadcn-btn--outline {
+    background-color: rgba(24, 24, 27, 0.55);
+    border-color: var(--shadcn-border);
+    color: var(--shadcn-fg);
+}
+.shadcn-btn--outline:hover {
+    background-color: var(--shadcn-accent);
+    border-color: #3f3f46;
+}
+.shadcn-btn--ghost {
+    background-color: transparent;
+    color: var(--shadcn-muted-fg);
+}
+.shadcn-btn--ghost:hover {
+    background-color: var(--shadcn-accent);
+    color: var(--shadcn-fg);
+}
+.shadcn-btn--destructive {
+    background-color: rgba(239, 68, 68, 0.14);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.32);
+}
+.shadcn-btn--destructive:hover {
+    background-color: rgba(239, 68, 68, 0.24);
+    border-color: rgba(239, 68, 68, 0.5);
+}
+.shadcn-btn--link {
+    background-color: transparent;
+    color: var(--accent-emerald-light);
+    text-underline-offset: 4px;
+}
+.shadcn-btn--link:hover {
+    text-decoration: underline;
+}
+
+.shadcn-btn--size-default {
+    height: 40px;
+    padding: 0 16px;
+}
+.shadcn-btn--size-sm {
+    height: 34px;
+    padding: 0 12px;
+    font-size: 0.8125rem;
+    border-radius: 7px;
+}
+.shadcn-btn--size-lg {
+    height: 46px;
+    padding: 0 24px;
+    font-size: 0.95rem;
+    border-radius: 9px;
+}
+.shadcn-btn--size-icon {
+    height: 38px;
+    width: 38px;
+    padding: 0;
+}
+
+/* 2. Card (shadcn/ui Card) */
+.shadcn-card {
+    background-color: var(--shadcn-card);
+    color: var(--shadcn-card-fg);
+    border: 1px solid var(--shadcn-border);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    overflow: hidden;
+}
+.shadcn-card-hover:hover {
+    border-color: #3f3f46;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+}
+.shadcn-card-header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 24px;
+}
+.shadcn-card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.015em;
+    color: var(--shadcn-fg);
+}
+.shadcn-card-description {
+    font-size: 0.875rem;
+    color: var(--shadcn-muted-fg);
+    line-height: 1.55;
+}
+.shadcn-card-content {
+    padding: 0 24px 24px 24px;
+}
+.shadcn-card-footer {
+    display: flex;
+    align-items: center;
+    padding: 16px 24px;
+    border-top: 1px solid var(--shadcn-border);
+    background-color: rgba(24, 24, 27, 0.35);
+}
+
+/* 3. Badge (shadcn/ui Badge) */
+.shadcn-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: 9999px;
+    border: 1px solid transparent;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.2;
+    transition: colors 0.15s ease;
+    white-space: nowrap;
+}
+.shadcn-badge--default {
+    background-color: var(--shadcn-primary);
+    color: #022c22;
+}
+.shadcn-badge--secondary {
+    background-color: var(--shadcn-secondary);
+    color: var(--shadcn-secondary-fg);
+    border-color: var(--shadcn-border);
+}
+.shadcn-badge--outline {
+    background-color: transparent;
+    color: var(--shadcn-fg);
+    border-color: var(--shadcn-border);
+}
+.shadcn-badge--destructive {
+    background-color: rgba(239, 68, 68, 0.14);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+.shadcn-badge--emerald {
+    background-color: rgba(16, 185, 129, 0.12);
+    color: #34d399;
+    border-color: rgba(16, 185, 129, 0.28);
+}
+.shadcn-badge--cyan {
+    background-color: rgba(6, 182, 212, 0.12);
+    color: #22d3ee;
+    border-color: rgba(6, 182, 212, 0.28);
+}
+.shadcn-badge--amber {
+    background-color: rgba(245, 158, 11, 0.12);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.28);
+}
+.shadcn-badge--violet {
+    background-color: rgba(139, 92, 246, 0.12);
+    color: #a78bfa;
+    border-color: rgba(139, 92, 246, 0.28);
+}
+
+/* 4. Input, Label & Textarea (shadcn/ui Form Controls) */
+.shadcn-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--shadcn-fg);
+    display: block;
+    margin-bottom: 8px;
+}
+.shadcn-input {
+    display: flex;
+    height: 40px;
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--shadcn-input);
+    background-color: #09090b;
+    padding: 8px 12px;
+    font-size: 0.875rem;
+    font-family: inherit;
+    color: var(--shadcn-fg);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    outline: none;
+}
+.shadcn-input::placeholder,
+.shadcn-textarea::placeholder {
+    color: #71717a;
+}
+.shadcn-input:focus,
+.shadcn-textarea:focus {
+    border-color: var(--shadcn-primary);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+}
+.shadcn-input:disabled,
+.shadcn-textarea:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+.shadcn-textarea {
+    display: flex;
+    min-height: 84px;
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--shadcn-input);
+    background-color: #09090b;
+    padding: 10px 12px;
+    font-size: 0.875rem;
+    font-family: inherit;
+    color: var(--shadcn-fg);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    outline: none;
+    resize: vertical;
+}
+
+/* 5. Table (shadcn/ui Data Table) */
+.shadcn-table-wrapper {
+    position: relative;
+    width: 100%;
+    overflow-x: auto;
+}
+.shadcn-table {
+    width: 100%;
+    caption-side: bottom;
+    font-size: 0.875rem;
+    border-collapse: collapse;
+}
+.shadcn-table-header tr {
+    border-bottom: 1px solid var(--shadcn-border);
+}
+.shadcn-table-head {
+    height: 44px;
+    padding: 0 16px;
+    text-align: left;
+    vertical-align: middle;
+    font-weight: 500;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--shadcn-muted-fg);
+}
+.shadcn-table-body tr {
+    border-bottom: 1px solid rgba(39, 39, 42, 0.7);
+    transition: background-color 0.15s ease;
+}
+.shadcn-table-body tr:last-child {
+    border-bottom: 0;
+}
+.shadcn-table-row:hover {
+    background-color: rgba(24, 24, 27, 0.6);
+}
+.shadcn-table-cell {
+    padding: 14px 16px;
+    vertical-align: middle;
+}
+
+/* 6. Dialog (shadcn/ui Modal Dialog) */
+.shadcn-dialog-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background-color: rgba(0, 0, 0, 0.78);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    animation: fadeIn 0.15s ease-out;
+}
+.shadcn-dialog-content {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    background-color: #0c0c0f;
+    border: 1px solid var(--shadcn-border);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.65);
+    animation: scaleUp 0.15s ease-out forwards;
+}
+.shadcn-dialog-close {
+    position: absolute;
+    right: 16px;
+    top: 16px;
+    height: 30px;
+    width: 30px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--shadcn-muted-fg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.shadcn-dialog-close:hover {
+    background-color: var(--shadcn-accent);
+    color: var(--shadcn-fg);
+}
+.shadcn-dialog-header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 20px;
+}
+.shadcn-dialog-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    color: var(--shadcn-fg);
+}
+.shadcn-dialog-description {
+    font-size: 0.875rem;
+    color: var(--shadcn-muted-fg);
+    line-height: 1.5;
+}
+.shadcn-dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--shadcn-border);
+}
+
+/* 7. Tabs (shadcn/ui Segmented Tabs) */
+.shadcn-tabs {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.shadcn-tabs-list {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background-color: #121216;
+    border: 1px solid var(--shadcn-border);
+    padding: 4px;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+.shadcn-tabs-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+    border-radius: 7px;
+    padding: 7px 14px;
+    font-size: 0.84rem;
+    font-weight: 500;
+    font-family: inherit;
+    color: var(--shadcn-muted-fg);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.shadcn-tabs-trigger:hover {
+    color: var(--shadcn-fg);
+}
+.shadcn-tabs-trigger--active {
+    background-color: #27272a;
+    color: var(--shadcn-fg);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* 8. Avatar & Separator & Alert */
+.shadcn-avatar {
+    position: relative;
+    display: flex;
+    height: 40px;
+    width: 40px;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 9999px;
+    border: 1px solid var(--shadcn-border);
+}
+.shadcn-avatar-fallback {
+    display: flex;
+    height: 100%;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background-color: #18181b;
+    color: var(--shadcn-fg);
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+.shadcn-separator {
+    flex-shrink: 0;
+    background-color: var(--shadcn-border);
+}
+.shadcn-separator--horizontal {
+    height: 1px;
+    width: 100%;
+}
+.shadcn-separator--vertical {
+    height: 100%;
+    width: 1px;
+}
+.shadcn-alert {
+    position: relative;
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid var(--shadcn-border);
+    background-color: #121216;
+    padding: 14px 16px;
+    font-size: 0.875rem;
+    color: var(--shadcn-fg);
+}
+.shadcn-alert--destructive {
+    border-color: rgba(239, 68, 68, 0.35);
+    background-color: rgba(239, 68, 68, 0.08);
+    color: #fca5a5;
+}
+.shadcn-alert--emerald {
+    border-color: rgba(16, 185, 129, 0.35);
+    background-color: rgba(16, 185, 129, 0.08);
+    color: #6ee7b7;
+}
+.shadcn-alert--amber {
+    border-color: rgba(245, 158, 11, 0.35);
+    background-color: rgba(245, 158, 11, 0.08);
+    color: #fde68a;
+}
+.shadcn-alert-title {
+    margin-bottom: 4px;
+    font-weight: 600;
+    line-height: 1.2;
+}
+.shadcn-alert-description {
+    font-size: 0.84rem;
+    line-height: 1.5;
+    opacity: 0.92;
 }

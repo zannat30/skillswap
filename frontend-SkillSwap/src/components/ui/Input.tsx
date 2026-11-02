@@ -1,23 +1,18 @@
-import React from 'react';
+import * as React from 'react';
+import { cn } from '@/lib/utils';
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  icon?: React.ReactNode;
-  wrapperClassName?: string;
-}
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
 
-export function Input({
-  icon,
-  wrapperClassName = '',
-  style,
-  ...props
-}: InputProps) {
-  return (
-    <div className={`search-bar ${wrapperClassName}`.trim()}>
-      {icon}
+export const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type = 'text', ...props }, ref) => {
+    return (
       <input
-        style={!icon ? { paddingLeft: '16px', ...style } : style}
+        type={type}
+        className={cn('shadcn-input', className)}
+        ref={ref}
         {...props}
       />
-    </div>
-  );
-}
+    );
+  }
+);
+Input.displayName = 'Input';

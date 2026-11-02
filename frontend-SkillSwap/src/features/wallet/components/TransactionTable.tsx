@@ -2,60 +2,67 @@
 
 import React from 'react';
 import { Transaction } from '@/types';
+import { Badge, BadgeVariant } from '@/components/ui/badge';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell
+} from '@/components/ui/table';
 
 interface TransactionTableProps {
   transactions: Transaction[];
 }
 
 export function TransactionTable({ transactions }: TransactionTableProps) {
-  const getBadgeClass = (type: string) => {
+  const getBadgeVariant = (type: string): BadgeVariant => {
     switch (type) {
       case 'BONUS':
-        return 'badge-type badge-bonus';
+        return 'violet';
       case 'ESCROW_LOCK':
-        return 'badge-type badge-lock';
+        return 'amber';
       case 'RELEASE':
-        return 'badge-type badge-release';
+        return 'emerald';
       case 'REFUND':
-        return 'badge-type badge-refund';
+        return 'cyan';
       case 'BURN':
-        return 'badge-type badge-burn';
+        return 'destructive';
       default:
-        return 'badge-type badge-bonus';
+        return 'secondary';
     }
   };
 
   return (
-    <div className="table-container">
-      <table className="ledger-table">
-        <thead>
-          <tr>
-            <th>Type</th>
-            <th>Description</th>
-            <th className="text-right">Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          {transactions.map((tx) => {
-            const isPositive = tx.amount >= 0;
-            return (
-              <tr key={tx._id}>
-                <td>
-                  <span className={getBadgeClass(tx.type)}>{tx.type}</span>
-                </td>
-                <td>{tx.description}</td>
-                <td
-                  className={`text-right font-bold ${
-                    isPositive ? 'text-emerald' : 'text-amber'
-                  }`}
-                >
-                  {isPositive ? `+${tx.amount}` : tx.amount}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Type</TableHead>
+          <TableHead>Description</TableHead>
+          <TableHead className="text-right">Amount</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {transactions.map((tx) => {
+          const isPositive = tx.amount >= 0;
+          return (
+            <TableRow key={tx._id}>
+              <TableCell>
+                <Badge variant={getBadgeVariant(tx.type)}>{tx.type}</Badge>
+              </TableCell>
+              <TableCell>{tx.description}</TableCell>
+              <TableCell
+                className={`text-right font-bold ${
+                  isPositive ? 'text-emerald' : 'text-amber'
+                }`}
+              >
+                {isPositive ? `+${tx.amount} CR` : `${tx.amount} CR`}
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
   );
 }
