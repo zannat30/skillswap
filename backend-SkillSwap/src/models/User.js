@@ -32,6 +32,11 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  // streakCount value at the moment the last 7-day bonus was claimed (claim-cycle reset)
+  streakBonusClaimedAtCount: {
+    type: Number,
+    default: 0
+  },
   lastLogin: {
     type: Date,
     default: Date.now

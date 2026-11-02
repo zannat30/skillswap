@@ -38,12 +38,34 @@ export interface User {
   createdAt?: string;
 }
 
+export interface ProfileData {
+  userId: string;
+  displayName: string;
+  initials: string;
+  email: string;
+  role: UserRole;
+  bio: string;
+  joinedAt: string;
+  credits: number;
+  availableCredits: number;
+  lockedInEscrow: number;
+  streakCount: number;
+  streakBonusEligible: boolean;
+  rating: number;
+  totalSessions: number;
+  skillsHave: SkillItem[];
+  skillsWant: SkillItem[];
+  availability: AvailabilitySlot[];
+  transactions: Transaction[];
+}
+
 export interface Mentor {
   _id: string;
   userId: string;
   name: string;
   displayName: string;
   initials: string;
+  bio?: string;
   rating: number;
   sessions: number;
   totalSessions: number;
@@ -54,6 +76,16 @@ export interface Mentor {
   skillsHaveDetailed?: SkillItem[];
   skillsWantDetailed?: SkillItem[];
   availability?: AvailabilitySlot[];
+  isBarterMatch?: boolean;
+}
+
+export interface ReviewItem {
+  sessionId: string;
+  learnerName: string;
+  skillName: string;
+  rating: number;
+  comment: string;
+  submittedAt: string;
 }
 
 export interface Session {
@@ -68,11 +100,16 @@ export interface Session {
   skillName: string;
   domain: DomainCategory;
   scheduledTime: string;
+  bookedSlot?: {
+    date: string;
+    slot: string;
+  };
   startedAt?: string;
   completedAt?: string;
   creditsLocked: number;
   meetingLink: string;
   disputeReason?: string;
+  chatLogs?: ChatMessage[];
   feedback?: {
     rating: number;
     comment: string;
@@ -96,7 +133,8 @@ export interface ChatMessage {
   sessionId: string;
   senderId: string;
   senderName: string;
-  text: string;
+  messageText?: string;
+  text?: string;
   timestamp: string;
 }
 
@@ -117,4 +155,16 @@ export interface LeaderboardLearner {
   initials: string;
   skillsAcquired: number;
   isCurrentUser?: boolean;
+}
+
+export interface AdminUserItem {
+  _id: string;
+  email: string;
+  displayName: string;
+  initials: string;
+  role: UserRole;
+  credits: number;
+  isBanned: boolean;
+  totalSessions: number;
+  rating: number;
 }

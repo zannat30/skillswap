@@ -4,7 +4,7 @@ const Session = require('../models/Session');
 const Transaction = require('../models/Transaction');
 const ChatLog = require('../models/ChatLog');
 const { isMongoConnected } = require('../config/db');
-const { getStore, generateId } = require('../config/memoryStore');
+const { getStore, generateId, IDS } = require('../config/memoryStore');
 const {
   SESSION_COST,
   calculateEscrowSplit,
@@ -40,9 +40,14 @@ const bookSession = async (req, res, next) => {
       mentorName,
       skillName = 'React.js State Management',
       domain = 'Technology',
-      scheduledTime
+      scheduledTime,
+      date,
+      slot,
+      bookedSlot
     } = req.body || {};
 
+    const chosenDate = bookedSlot?.date || date || '';
+    const chosenSlot = bookedSlot?.slot || slot || '';
     const sessionCost = SESSION_COST; // 50 CR
 
     if (isMongoConnected()) {
@@ -66,9 +71,35 @@ const bookSession = async (req, res, next) => {
       }
 
       let resolvedMentorId = mentorId;
-      if (!resolvedMentorId && mentorName) {
-        const mp = await UserProfile.findOne({ displayName: mentorName });
-        if (mp) resolvedMentorId = mp.userId;
+      let mentorProfile = null;
+      if (resolvedMentorId) {
+        mentorProfile = await UserProfile.findOne({ userId: resolvedMentorId });
+      } else if (mentorName) {
+        mentorProfile = await UserProfile.findOne({ displayName: mentorName });
+        if (mentorProfile) resolvedMentorId = mentorProfile.userId;
+      }
+
+      if (String(resolvedMentorId) === String(learner._id)) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'SELF_BOOKING_NOT_ALLOWED',
+            httpStatus: 400,
+            message: 'You cannot book a mentorship session with yourself.'
+          }
+        });
+      }
+
+      // Remove chosen slot from mentor availability if specified
+      if (mentorProfile && chosenDate && chosenSlot) {
+        const entry = mentorProfile.availability.find((a) => a.date === chosenDate);
+        if (entry) {
+          entry.slots = entry.slots.filter((s) => s !== chosenSlot);
+          if (entry.slots.length === 0) {
+            mentorProfile.availability = mentorProfile.availability.filter((a) => a.date !== chosenDate);
+          }
+          await mentorProfile.save();
+        }
       }
 
       learner.credits -= sessionCost;
@@ -81,6 +112,7 @@ const bookSession = async (req, res, next) => {
         skillName,
         domain,
         scheduledTime: scheduledTime ? new Date(scheduledTime) : new Date(Date.now() + 3600000),
+        bookedSlot: { date: chosenDate, slot: chosenSlot },
         creditsLocked: sessionCost
       });
 
@@ -93,7 +125,6 @@ const bookSession = async (req, res, next) => {
         description: `Locked ${sessionCost} CR in Escrow for ${skillName}`
       });
 
-      // Notify Mentor over Socket.io if connected
       const io = req.app.get('io');
       const userSockets = req.app.get('userSockets');
       if (io && userSockets && userSockets.has(String(resolvedMentorId))) {
@@ -115,6 +146,7 @@ const bookSession = async (req, res, next) => {
           domain: sessionDoc.domain,
           mentorId: String(sessionDoc.mentorId),
           learnerId: String(sessionDoc.learnerId),
+          bookedSlot: sessionDoc.bookedSlot,
           creditsLocked: sessionDoc.creditsLocked,
           learnerWalletRemaining: learner.credits
         }
@@ -142,16 +174,47 @@ const bookSession = async (req, res, next) => {
       });
     }
 
-    let resolvedMentorProfile = store.userProfiles.find(
+    const resolvedMentorProfile = store.userProfiles.find(
       (p) =>
         String(p.userId) === String(mentorId) ||
         (mentorName && p.displayName.toLowerCase() === String(mentorName).toLowerCase())
     );
     const resolvedMentorId = resolvedMentorProfile
       ? resolvedMentorProfile.userId
-      : mentorId || '664f1a2b3c4d5e6f7a8b9c99';
+      : mentorId || IDS.ALEX;
+
+    if (String(resolvedMentorId) === String(learner._id)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'SELF_BOOKING_NOT_ALLOWED',
+          httpStatus: 400,
+          message: 'You cannot book a mentorship session with yourself.'
+        }
+      });
+    }
+
+    // Remove chosen slot from mentor's availability if provided
+    if (resolvedMentorProfile && chosenDate && chosenSlot && Array.isArray(resolvedMentorProfile.availability)) {
+      const entry = resolvedMentorProfile.availability.find((a) => a.date === chosenDate);
+      if (entry && Array.isArray(entry.slots)) {
+        entry.slots = entry.slots.filter((s) => s !== chosenSlot);
+        if (entry.slots.length === 0) {
+          resolvedMentorProfile.availability = resolvedMentorProfile.availability.filter(
+            (a) => a.date !== chosenDate
+          );
+        }
+      }
+    }
 
     learner.credits -= sessionCost;
+
+    let computedScheduledTime = scheduledTime ? new Date(scheduledTime) : new Date(Date.now() + 3600000);
+    if (!scheduledTime && chosenDate && chosenSlot) {
+      const startHour = chosenSlot.split('-')[0] || '14:00';
+      const parsed = new Date(`${chosenDate}T${startHour}:00`);
+      if (!Number.isNaN(parsed.getTime())) computedScheduledTime = parsed;
+    }
 
     const newSession = {
       _id: generateId(),
@@ -160,11 +223,12 @@ const bookSession = async (req, res, next) => {
       status: 'PENDING',
       skillName,
       domain,
-      scheduledTime: scheduledTime ? new Date(scheduledTime) : new Date(Date.now() + 3600000),
+      scheduledTime: computedScheduledTime,
+      bookedSlot: { date: chosenDate, slot: chosenSlot },
       startedAt: null,
       completedAt: null,
       creditsLocked: sessionCost,
-      meetingLink: 'https://meet.google.com/new',
+      meetingLink: 'https://meet.google.com/skillswap-live-room',
       disputeReason: '',
       feedback: null,
       createdAt: new Date()
@@ -210,12 +274,16 @@ const bookSession = async (req, res, next) => {
 const getActiveSessions = async (req, res, next) => {
   try {
     const userId = req.user.userId;
+    const isAdmin = req.user.role === 'ADMIN';
 
     if (isMongoConnected()) {
-      const sessions = await Session.find({
-        $or: [{ learnerId: userId }, { mentorId: userId }],
-        status: { $in: ['PENDING', 'ACTIVE', 'DISPUTED'] }
-      }).sort({ createdAt: -1 });
+      const filter = isAdmin
+        ? { status: { $in: ['PENDING', 'ACTIVE', 'DISPUTED'] } }
+        : {
+            $or: [{ learnerId: userId }, { mentorId: userId }],
+            status: { $in: ['PENDING', 'ACTIVE', 'DISPUTED'] }
+          };
+      const sessions = await Session.find(filter).sort({ createdAt: -1 });
 
       const enriched = await Promise.all(
         sessions.map(async (s) => {
@@ -240,7 +308,9 @@ const getActiveSessions = async (req, res, next) => {
     const sessions = store.sessions
       .filter(
         (s) =>
-          (String(s.learnerId) === String(userId) || String(s.mentorId) === String(userId)) &&
+          (isAdmin ||
+            String(s.learnerId) === String(userId) ||
+            String(s.mentorId) === String(userId)) &&
           ['PENDING', 'ACTIVE', 'DISPUTED'].includes(s.status)
       )
       .map((s) => enrichSessionInMemory(s, store));
@@ -255,20 +325,41 @@ const getActiveSessions = async (req, res, next) => {
 const getSessionHistory = async (req, res, next) => {
   try {
     const userId = req.user.userId;
+    const isAdmin = req.user.role === 'ADMIN';
 
     if (isMongoConnected()) {
-      const sessions = await Session.find({
-        $or: [{ learnerId: userId }, { mentorId: userId }],
-        status: { $in: ['COMPLETED', 'CANCELLED', 'REFUNDED'] }
-      }).sort({ completedAt: -1, updatedAt: -1 });
-      return res.status(200).json({ success: true, sessions });
+      const filter = isAdmin
+        ? { status: { $in: ['COMPLETED', 'CANCELLED', 'REFUNDED'] } }
+        : {
+            $or: [{ learnerId: userId }, { mentorId: userId }],
+            status: { $in: ['COMPLETED', 'CANCELLED', 'REFUNDED'] }
+          };
+      const sessions = await Session.find(filter).sort({ completedAt: -1, updatedAt: -1 });
+      const enriched = await Promise.all(
+        sessions.map(async (s) => {
+          const mp = await UserProfile.findOne({ userId: s.mentorId });
+          const lp = await UserProfile.findOne({ userId: s.learnerId });
+          const mentorName = mp ? mp.displayName : 'Alex Rivera';
+          const learnerName = lp ? lp.displayName : 'Zannat';
+          return {
+            ...s.toObject(),
+            mentorName,
+            mentorInitials: getInitials(mentorName),
+            learnerName,
+            learnerInitials: getInitials(learnerName)
+          };
+        })
+      );
+      return res.status(200).json({ success: true, sessions: enriched });
     }
 
     const store = getStore();
     const sessions = store.sessions
       .filter(
         (s) =>
-          (String(s.learnerId) === String(userId) || String(s.mentorId) === String(userId)) &&
+          (isAdmin ||
+            String(s.learnerId) === String(userId) ||
+            String(s.mentorId) === String(userId)) &&
           ['COMPLETED', 'CANCELLED', 'REFUNDED'].includes(s.status)
       )
       .map((s) => enrichSessionInMemory(s, store));
@@ -411,7 +502,7 @@ const updateMeetingLink = async (req, res, next) => {
           error: { code: 'SESSION_NOT_FOUND', httpStatus: 404, message: 'Session not found.' }
         });
       }
-      session.meetingLink = meetingLink;
+      session.meetingLink = String(meetingLink).trim();
       await session.save();
       return res.status(200).json({ success: true, session });
     }
@@ -424,7 +515,7 @@ const updateMeetingLink = async (req, res, next) => {
         error: { code: 'SESSION_NOT_FOUND', httpStatus: 404, message: 'Session not found.' }
       });
     }
-    session.meetingLink = meetingLink;
+    session.meetingLink = String(meetingLink).trim();
     return res.status(200).json({ success: true, session: enrichSessionInMemory(session, store) });
   } catch (err) {
     next(err);
@@ -550,6 +641,9 @@ const completeSession = async (req, res, next) => {
       const prevRating = mentorProfile.rating || 5.0;
       const numRating = Math.min(5, Math.max(1, Number(rating) || 5));
       mentorProfile.totalSessions = prevTotal + 1;
+      if (typeof mentorProfile.leaderboardSessions === 'number') {
+        mentorProfile.leaderboardSessions += 1;
+      }
       mentorProfile.rating = Number(
         ((prevRating * prevTotal + numRating) / (prevTotal + 1)).toFixed(1)
       );
@@ -698,6 +792,22 @@ const cancelSession = async (req, res, next) => {
       session.status = 'CANCELLED';
       await session.save();
 
+      // Restore booked slot to mentor availability if present
+      if (session.bookedSlot?.date && session.bookedSlot?.slot) {
+        const mp = await UserProfile.findOne({ userId: session.mentorId });
+        if (mp) {
+          const entry = mp.availability.find((a) => a.date === session.bookedSlot.date);
+          if (entry) {
+            if (!entry.slots.includes(session.bookedSlot.slot)) {
+              entry.slots.push(session.bookedSlot.slot);
+            }
+          } else {
+            mp.availability.push({ date: session.bookedSlot.date, slots: [session.bookedSlot.slot] });
+          }
+          await mp.save();
+        }
+      }
+
       const learner = await User.findById(session.learnerId);
       if (learner) {
         learner.credits += session.creditsLocked;
@@ -740,6 +850,27 @@ const cancelSession = async (req, res, next) => {
     }
 
     session.status = 'CANCELLED';
+
+    // Restore booked slot to mentor availability if present
+    if (session.bookedSlot?.date && session.bookedSlot?.slot) {
+      const mp = store.userProfiles.find((p) => String(p.userId) === String(session.mentorId));
+      if (mp) {
+        if (!Array.isArray(mp.availability)) mp.availability = [];
+        const entry = mp.availability.find((a) => a.date === session.bookedSlot.date);
+        if (entry) {
+          if (!entry.slots.includes(session.bookedSlot.slot)) {
+            entry.slots.push(session.bookedSlot.slot);
+          }
+        } else {
+          mp.availability.push({
+            _id: generateId(),
+            date: session.bookedSlot.date,
+            slots: [session.bookedSlot.slot]
+          });
+        }
+      }
+    }
+
     const learner = store.users.find((u) => String(u._id) === String(session.learnerId));
     if (learner) {
       learner.credits += session.creditsLocked;
@@ -846,6 +977,79 @@ const getSessionChat = async (req, res, next) => {
   }
 };
 
+// Feature #45: POST /api/sessions/:id/chat (REST + Socket broadcast for live session workspace chat)
+const sendSessionChat = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { text, messageText, senderName: customSenderName } = req.body || {};
+    const rawText = text || messageText || '';
+
+    if (!String(rawText).trim()) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', httpStatus: 400, message: 'Message text is required.' }
+      });
+    }
+
+    const cleanText = String(rawText).trim().slice(0, 2000);
+    const senderId = req.user.userId;
+    const roomName = `room:session_${id}`;
+
+    if (isMongoConnected()) {
+      const profile = await UserProfile.findOne({ userId: senderId });
+      const senderName = customSenderName || (profile ? profile.displayName : req.user.email);
+      const chatDoc = await ChatLog.create({
+        sessionId: id,
+        senderId,
+        senderName,
+        text: cleanText,
+        timestamp: new Date()
+      });
+
+      const payload = {
+        _id: String(chatDoc._id),
+        sessionId: String(id),
+        senderId: String(senderId),
+        senderName,
+        text: cleanText,
+        messageText: cleanText,
+        timestamp: chatDoc.timestamp
+      };
+
+      const io = req.app.get('io');
+      if (io) {
+        io.to(roomName).emit('new-message', payload);
+      }
+
+      return res.status(201).json({ success: true, message: payload });
+    }
+
+    const store = getStore();
+    const profile = store.userProfiles.find((p) => String(p.userId) === String(senderId));
+    const senderName = customSenderName || (profile ? profile.displayName : req.user.email);
+
+    const newMsg = {
+      _id: generateId(),
+      sessionId: String(id),
+      senderId: String(senderId),
+      senderName,
+      text: cleanText,
+      messageText: cleanText,
+      timestamp: new Date()
+    };
+    store.chatLogs.push(newMsg);
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(roomName).emit('new-message', newMsg);
+    }
+
+    return res.status(201).json({ success: true, message: newMsg });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   bookSession,
   getActiveSessions,
@@ -857,5 +1061,6 @@ module.exports = {
   disputeSession,
   cancelSession,
   submitFeedback,
-  getSessionChat
+  getSessionChat,
+  sendSessionChat
 };

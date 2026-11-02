@@ -53,6 +53,11 @@ const SessionSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  // Mentor availability slot consumed by this booking (restored on cancellation)
+  bookedSlot: {
+    date: { type: String },
+    slot: { type: String }
+  },
   feedback: {
     rating: { type: Number, min: 1, max: 5 },
     comment: { type: String, maxlength: 400 },

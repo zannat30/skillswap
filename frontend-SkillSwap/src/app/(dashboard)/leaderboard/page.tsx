@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Flame, Medal, BookOpen } from 'lucide-react';
+import { Flame, Medal, BookOpen, Check, AlertTriangle } from 'lucide-react';
 import { LeaderboardMentor, LeaderboardLearner } from '@/types';
 import { apiRequest } from '@/lib/apiClient';
 import { useAuth } from '@/context/AuthContext';
@@ -64,13 +64,15 @@ const INITIAL_TOP_LEARNERS: LeaderboardLearner[] = [
 ];
 
 export default function LeaderboardPage() {
-  const { availableCredits, setCredits, addLocalTransaction, refreshProfile } =
-    useAuth();
+  const { profile, refreshProfile } = useAuth();
   const [mentors, setMentors] =
     useState<LeaderboardMentor[]>(INITIAL_TOP_MENTORS);
   const [learners, setLearners] =
     useState<LeaderboardLearner[]>(INITIAL_TOP_LEARNERS);
-  const [claimed, setClaimed] = useState<boolean>(false);
+  const [statusBanner, setStatusBanner] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
 
   useEffect(() => {
     const fetchRankings = async () => {
@@ -93,27 +95,22 @@ export default function LeaderboardPage() {
   }, []);
 
   const handleClaimReward = async () => {
-    if (claimed) return;
+    setStatusBanner(null);
     try {
       const res = await apiRequest('/wallet/claim-streak', { method: 'POST' });
       if (res?.success) {
-        setClaimed(true);
         await refreshProfile();
-        return;
+        setStatusBanner({
+          type: 'success',
+          text: res.message || '+20 Credit Streak Bonus claimed and added to wallet!'
+        });
       }
-    } catch (_) {
-      // Fallback local update
+    } catch (err: any) {
+      setStatusBanner({
+        type: 'error',
+        text: err.message || 'Unable to claim streak reward.'
+      });
     }
-    setClaimed(true);
-    setCredits(availableCredits + 20);
-    addLocalTransaction({
-      _id: `tx-${Date.now()}`,
-      userId: '664f1a2b3c4d5e6f7a8b9c01',
-      type: 'BONUS',
-      amount: 20,
-      description: '7-Day Learning Streak Bonus',
-      createdAt: new Date().toISOString()
-    });
   };
 
   return (
@@ -125,6 +122,36 @@ export default function LeaderboardPage() {
         </p>
       </div>
 
+      {statusBanner && (
+        <div
+          className="glass-panel mb-6"
+          style={{
+            padding: '12px 16px',
+            borderRadius: '12px',
+            borderColor:
+              statusBanner.type === 'error'
+                ? 'var(--accent-amber)'
+                : 'var(--accent-emerald)',
+            color:
+              statusBanner.type === 'error'
+                ? 'var(--accent-amber)'
+                : 'var(--accent-emerald)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontWeight: 600,
+            fontSize: '0.88rem'
+          }}
+        >
+          {statusBanner.type === 'error' ? (
+            <AlertTriangle size={16} />
+          ) : (
+            <Check size={16} />
+          )}
+          <span>{statusBanner.text}</span>
+        </div>
+      )}
+
       {/* Daily Streak */}
       <div className="glass-card streak-card p-6 mb-6 border-radius-16">
         <div className="flex items-center gap-4">
@@ -134,10 +161,12 @@ export default function LeaderboardPage() {
           />
           <div>
             <h3 className="text-xl font-bold text-white">
-              7 Day Learning Streak!
+              {profile.streakCount || 7} Day Learning Streak!
             </h3>
             <p className="text-amber mt-1">
-              You earned a +20 Credit bonus today.
+              {profile.streakBonusEligible
+                ? 'You unlocked a +20 Credit bonus today!'
+                : '7-Day Streak Milestone Reward (+20 CR per 7-day cycle)'}
             </p>
           </div>
         </div>
@@ -150,7 +179,9 @@ export default function LeaderboardPage() {
           onClick={handleClaimReward}
           type="button"
         >
-          {claimed ? 'Reward Claimed (+20 CR)' : 'Claim Reward'}
+          {profile.streakBonusEligible
+            ? 'Claim Reward (+20 CR)'
+            : 'Reward Claimed (+20 CR)'}
         </button>
       </div>
 

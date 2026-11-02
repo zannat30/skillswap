@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiRequest } from '@/lib/apiClient';
+import { registerSchema } from '@/lib/validators';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -19,10 +20,17 @@ export function RegisterForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    const parsed = registerSchema.safeParse({ displayName, email, password });
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message || 'Invalid registration input');
+      return;
+    }
+
     try {
       const res = await apiRequest('/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ displayName, email, password })
+        body: JSON.stringify(parsed.data)
       });
       if (res?.success) {
         loginUser(res.token, res.user);

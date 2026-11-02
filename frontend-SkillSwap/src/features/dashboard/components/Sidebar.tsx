@@ -8,13 +8,14 @@ import {
   BookOpen,
   MessageSquare,
   User as UserIcon,
-  Trophy
+  Trophy,
+  ShieldAlert
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { activeSessionsCount } = useAuth();
+  const { activeSessionsCount, user } = useAuth();
 
   const isMarketplaceActive =
     pathname === '/' || pathname.startsWith('/marketplace');
@@ -22,6 +23,7 @@ export function Sidebar() {
   const isSkillbotActive = pathname.startsWith('/ai-skillbot');
   const isProfileActive = pathname.startsWith('/profile');
   const isLeaderboardActive = pathname.startsWith('/leaderboard');
+  const isAdminActive = pathname.startsWith('/admin');
 
   return (
     <aside className="sidebar">
@@ -68,6 +70,25 @@ export function Sidebar() {
         >
           <Trophy />
           <span>Leaderboard</span>
+        </Link>
+
+        <p className="nav-label" style={{ marginTop: '16px' }}>
+          Governance
+        </p>
+        <Link
+          href="/admin/disputes"
+          className={`nav-item ${isAdminActive ? 'active' : ''}`}
+        >
+          <ShieldAlert />
+          <span>Admin Console</span>
+          {user?.role === 'ADMIN' && (
+            <span
+              className="badge"
+              style={{ background: 'var(--accent-amber)', color: '#000' }}
+            >
+              ADMIN
+            </span>
+          )}
         </Link>
       </nav>
     </aside>

@@ -37,18 +37,12 @@ const getWalletBalance = async (req, res, next) => {
 
     const store = getStore();
     const user = store.users.find((u) => String(u._id) === String(userId)) || store.users[0];
-    const lockedTxs = store.transactions.filter(
-      (t) => String(t.userId) === String(user._id) && t.type === 'ESCROW_LOCK'
-    );
     const activeSessions = store.sessions.filter(
       (s) =>
         String(s.learnerId) === String(user._id) &&
         ['PENDING', 'ACTIVE', 'DISPUTED'].includes(s.status)
     );
-    const lockedInEscrow =
-      lockedTxs.length > 0
-        ? activeSessions.reduce((sum, s) => sum + (s.creditsLocked || 50), 0)
-        : 0;
+    const lockedInEscrow = activeSessions.reduce((sum, s) => sum + (s.creditsLocked || 50), 0);
 
     return res.status(200).json({
       success: true,
@@ -109,8 +103,19 @@ const claimStreakBonus = async (req, res, next) => {
         });
       }
 
+      if ((user.streakBonusClaimedAtCount || 0) >= user.streakCount) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'STREAK_ALREADY_CLAIMED',
+            httpStatus: 400,
+            message: 'You have already claimed your +20 CR reward for this 7-day streak milestone.'
+          }
+        });
+      }
+
       user.credits += bonusAmount;
-      user.streakClaimedAt = new Date();
+      user.streakBonusClaimedAtCount = user.streakCount;
       await user.save();
 
       const tx = await Transaction.create({
@@ -144,8 +149,19 @@ const claimStreakBonus = async (req, res, next) => {
       });
     }
 
+    if ((user.streakBonusClaimedAtCount || 0) >= user.streakCount) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'STREAK_ALREADY_CLAIMED',
+          httpStatus: 400,
+          message: 'You have already claimed your +20 CR reward for this 7-day streak milestone.'
+        }
+      });
+    }
+
     user.credits += bonusAmount;
-    user.streakClaimedAt = new Date();
+    user.streakBonusClaimedAtCount = user.streakCount;
 
     const tx = {
       _id: generateId(),

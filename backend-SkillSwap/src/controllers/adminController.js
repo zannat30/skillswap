@@ -7,6 +7,12 @@ const { isMongoConnected } = require('../config/db');
 const { getStore, generateId } = require('../config/memoryStore');
 const { calculateEscrowSplit, validateStateTransition } = require('../utils/escrowEngine');
 
+const getInitials = (name = 'U') => {
+  const parts = String(name).trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return String(name).slice(0, 2).toUpperCase();
+};
+
 // Feature #51: GET /api/admin/disputes
 const getDisputedSessions = async (req, res, next) => {
   try {
@@ -281,6 +287,54 @@ const rejectDisputeReleaseToMentor = async (req, res, next) => {
   }
 };
 
+// GET /api/admin/users (List all users for Admin Moderation)
+const getAllUsers = async (req, res, next) => {
+  try {
+    if (isMongoConnected()) {
+      const users = await User.find().sort({ createdAt: -1 });
+      const enriched = await Promise.all(
+        users.map(async (u) => {
+          const p = await UserProfile.findOne({ userId: u._id });
+          const displayName = p ? p.displayName : u.email.split('@')[0];
+          return {
+            _id: String(u._id),
+            email: u.email,
+            displayName,
+            initials: getInitials(displayName),
+            role: u.role,
+            credits: u.credits,
+            isBanned: Boolean(u.isBanned),
+            totalSessions: p ? p.totalSessions : 0,
+            rating: p ? p.rating : 5.0
+          };
+        })
+      );
+      return res.status(200).json({ success: true, users: enriched });
+    }
+
+    const store = getStore();
+    const users = store.users.map((u) => {
+      const p = store.userProfiles.find((prof) => String(prof.userId) === String(u._id));
+      const displayName = p ? p.displayName : u.email.split('@')[0];
+      return {
+        _id: String(u._id),
+        email: u.email,
+        displayName,
+        initials: p?.initials || getInitials(displayName),
+        role: u.role,
+        credits: u.credits,
+        isBanned: Boolean(u.isBanned),
+        totalSessions: p ? p.totalSessions : 0,
+        rating: p ? p.rating : 5.0
+      };
+    });
+
+    return res.status(200).json({ success: true, users });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // Feature #54: PUT /api/admin/users/:userId/ban
 const toggleBanUser = async (req, res, next) => {
   try {
@@ -337,5 +391,6 @@ module.exports = {
   getDisputedSessions,
   approveDisputeRefund,
   rejectDisputeReleaseToMentor,
+  getAllUsers,
   toggleBanUser
 };

@@ -22,6 +22,7 @@ const {
 const { optionalAuth } = require('../middleware/authMiddleware');
 const domainFilterMiddleware = require('../middleware/domainFilterMiddleware');
 
+// Profile Management (Features #8, #9, #11)
 router.post('/', optionalAuth, initializeProfile);
 router.get('/me', optionalAuth, getMyProfile);
 router.put('/bio', optionalAuth, updateBio);
@@ -43,7 +44,7 @@ router.post('/availability', optionalAuth, addAvailability);
 router.put('/availability/:slotId', optionalAuth, updateAvailability);
 router.delete('/availability/:slotId', optionalAuth, deleteAvailability);
 
-// Public Profile & Reviews & Mentor Availability (Features #10, #21, #38)
+// Public (Features #10, #21, #38)
 router.get('/:userId/availability', getAvailability);
 router.get('/:userId/reviews', getMentorReviews);
 router.get('/:userId', getPublicProfile);
