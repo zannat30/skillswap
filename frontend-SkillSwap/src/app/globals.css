@@ -25,12 +25,17 @@
     box-sizing: border-box;
 }
 
+html {
+    scroll-padding-top: 96px;
+}
+
 body {
     font-family: var(--font-sans);
     background-color: var(--bg-base);
     color: var(--text-primary);
     -webkit-font-smoothing: antialiased;
-    overflow: hidden; /* App layout handles scroll */
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 /* Scrollbar */
@@ -117,6 +122,7 @@ body {
     display: flex;
     height: 100vh;
     width: 100vw;
+    overflow: hidden;
 }
 
 /* Sidebar */
@@ -512,14 +518,24 @@ body {
     gap: 6px;
 }
 .tag-emerald {
-    background: rgba(16, 185, 129, 0.1);
+    background: rgba(16, 185, 129, 0.12);
     color: var(--accent-emerald-light);
-    border: 1px solid rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(16, 185, 129, 0.28);
+}
+.tag-cyan {
+    background: rgba(6, 182, 212, 0.12);
+    color: #22d3ee;
+    border: 1px solid rgba(6, 182, 212, 0.28);
+}
+.tag-amber {
+    background: rgba(245, 158, 11, 0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.28);
 }
 .tag-violet {
-    background: rgba(139, 92, 246, 0.1);
+    background: rgba(139, 92, 246, 0.12);
     color: #a78bfa;
-    border: 1px solid rgba(139, 92, 246, 0.2);
+    border: 1px solid rgba(139, 92, 246, 0.28);
 }
 .mt-3 { margin-top: 16px; }
 .w-full { width: 100%; }
