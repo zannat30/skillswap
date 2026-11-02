@@ -1,4 +1,5 @@
 const http = require('http');
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -6,7 +7,7 @@ const rateLimit = require('express-rate-limit');
 const { Server } = require('socket.io');
 const dotenv = require('dotenv');
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 const { connectDB } = require('./src/config/db');
 const corsOptions = require('./src/config/corsOptions');

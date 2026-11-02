@@ -53,6 +53,14 @@ const UserProfileSchema = new mongoose.Schema({
   totalSessions: {
     type: Number,
     default: 0
+  },
+  leaderboardSessions: {
+    type: Number,
+    default: 0
+  },
+  skillsAcquiredCount: {
+    type: Number,
+    default: 0
   }
 }, { timestamps: true });
 

@@ -42,8 +42,7 @@ const SessionSchema = new mongoose.Schema({
   },
   creditsLocked: {
     type: Number,
-    default: 50,
-    immutable: true
+    default: 50
   },
   meetingLink: {
     type: String,

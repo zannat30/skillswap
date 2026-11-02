@@ -13,8 +13,24 @@ const getTopMentors = async (req, res, next) => {
   try {
     if (isMongoConnected()) {
       const mentors = await UserProfile.aggregate([
-        { $match: { totalSessions: { $gt: 0 } } },
-        { $sort: { totalSessions: -1, rating: -1 } },
+        {
+          $match: {
+            'skillsHave.0': { $exists: true },
+            totalSessions: { $gt: 0 }
+          }
+        },
+        {
+          $addFields: {
+            effectiveSessions: {
+              $cond: [
+                { $gt: ['$leaderboardSessions', 0] },
+                '$leaderboardSessions',
+                '$totalSessions'
+              ]
+            }
+          }
+        },
+        { $sort: { effectiveSessions: -1, rating: -1 } },
         { $limit: 10 }
       ]);
 
@@ -24,7 +40,7 @@ const getTopMentors = async (req, res, next) => {
         displayName: m.displayName,
         initials: getInitials(m.displayName),
         domain: m.skillsHave?.[0]?.domain || 'Technology',
-        sessions: m.totalSessions,
+        sessions: m.effectiveSessions ?? m.totalSessions,
         rating: m.rating
       }));
 
@@ -62,13 +78,20 @@ const getTopMentors = async (req, res, next) => {
 const getTopLearners = async (req, res, next) => {
   try {
     if (isMongoConnected()) {
-      const learners = await UserProfile.find().sort({ totalSessions: -1 }).limit(10);
+      const learners = await UserProfile.find({
+        skillsAcquiredCount: { $gt: 0 }
+      })
+        .sort({ skillsAcquiredCount: -1, totalSessions: -1 })
+        .limit(10);
+
       const formatted = learners.map((l, idx) => ({
         rank: idx + 1,
         userId: String(l.userId),
         displayName: l.displayName,
         initials: getInitials(l.displayName),
-        skillsAcquired: (l.skillsHave?.length || 0) + (l.skillsWant?.length || 0) + 5,
+        skillsAcquired:
+          l.skillsAcquiredCount ||
+          (l.skillsHave?.length || 0) + (l.skillsWant?.length || 0) + 5,
         isCurrentUser: l.displayName.toLowerCase().includes('zannat')
       }));
       return res.status(200).json({ success: true, learners: formatted });

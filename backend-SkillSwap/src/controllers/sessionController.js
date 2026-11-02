@@ -741,13 +741,25 @@ const completeSession = async (req, res, next) => {
             const prevRating = mentorProfile.rating || 5.0;
             const numRating = Math.min(5, Math.max(1, Number(rating) || 5));
             mentorProfile.totalSessions = prevTotal + 1;
+            if (mentorProfile.leaderboardSessions) {
+              mentorProfile.leaderboardSessions += 1;
+            }
             mentorProfile.rating = Number(
               ((prevRating * prevTotal + numRating) / (prevTotal + 1)).toFixed(1)
             );
             await mentorProfile.save({ session: dbSession });
           }
 
+          const learnerProfile = await UserProfile.findOne({ userId: session.learnerId }).session(
+            dbSession
+          );
+          if (learnerProfile) {
+            learnerProfile.skillsAcquiredCount = (learnerProfile.skillsAcquiredCount || 0) + 1;
+            await learnerProfile.save({ session: dbSession });
+          }
+
           session.status = 'COMPLETED';
+          session.creditsLocked = 0;
           session.completedAt = new Date();
           session.feedback = {
             rating: Math.min(5, Math.max(1, Number(rating) || 5)),
