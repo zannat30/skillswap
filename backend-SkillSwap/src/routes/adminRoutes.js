@@ -5,7 +5,8 @@ const {
   approveDisputeRefund,
   rejectDisputeReleaseToMentor,
   getAllUsers,
-  toggleBanUser
+  toggleBanUser,
+  removeUser
 } = require('../controllers/adminController');
 const { protect, requireAdmin } = require('../middleware/authMiddleware');
 
@@ -14,5 +15,6 @@ router.post('/disputes/:id/refund', protect, requireAdmin, approveDisputeRefund)
 router.post('/disputes/:id/release', protect, requireAdmin, rejectDisputeReleaseToMentor);
 router.get('/users', protect, requireAdmin, getAllUsers);
 router.put('/users/:userId/ban', protect, requireAdmin, toggleBanUser);
+router.delete('/users/:userId', protect, requireAdmin, removeUser);
 
 module.exports = router;

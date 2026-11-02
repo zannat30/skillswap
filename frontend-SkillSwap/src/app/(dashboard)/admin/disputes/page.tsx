@@ -8,6 +8,7 @@ import {
   Users,
   Ban,
   Unlock,
+  Trash2,
   MessageSquare,
   Shield
 } from 'lucide-react';
@@ -113,6 +114,26 @@ export default function AdminDisputesPage() {
           `User ${targetUser.displayName} ${!targetUser.isBanned ? 'banned' : 'unbanned'} successfully.`
       });
       await loadAdminData();
+    } catch (err: any) {
+      setStatusMsg({ type: 'error', text: err.message });
+    }
+  };
+
+  // Feature #55: Permanently Remove User (DELETE /api/admin/users/:userId)
+  const handleRemoveUser = async (targetUser: AdminUserItem) => {
+    try {
+      const res = await apiRequest(`/admin/users/${targetUser._id}`, {
+        method: 'DELETE'
+      });
+      setStatusMsg({
+        type: 'success',
+        text:
+          res?.message ||
+          `User ${targetUser.displayName} (${targetUser.email}) has been permanently removed.`
+      });
+      setUsersList((prev) => prev.filter((item) => item._id !== targetUser._id));
+      await loadAdminData();
+      await refreshProfile();
     } catch (err: any) {
       setStatusMsg({ type: 'error', text: err.message });
     }
@@ -332,27 +353,43 @@ export default function AdminDisputesPage() {
                     </td>
                     <td className="text-right">
                       {u.role !== 'ADMIN' && (
-                        <button
-                          type="button"
-                          onClick={() => handleToggleBanUser(u)}
-                          className={`btn ${u.isBanned ? 'btn-primary' : 'btn-danger'}`}
-                          style={{
-                            padding: '5px 10px',
-                            fontSize: '0.75rem',
-                            display: 'inline-flex',
-                            marginLeft: 'auto'
-                          }}
+                        <div
+                          className="flex items-center gap-2"
+                          style={{ justifyContent: 'flex-end' }}
                         >
-                          {u.isBanned ? (
-                            <>
-                              <Unlock size={13} /> Unban User
-                            </>
-                          ) : (
-                            <>
-                              <Ban size={13} /> Ban User
-                            </>
-                          )}
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleBanUser(u)}
+                            className={`btn ${u.isBanned ? 'btn-primary' : 'glass-btn'}`}
+                            style={{
+                              padding: '5px 10px',
+                              fontSize: '0.75rem',
+                              display: 'inline-flex'
+                            }}
+                          >
+                            {u.isBanned ? (
+                              <>
+                                <Unlock size={13} /> Unban User
+                              </>
+                            ) : (
+                              <>
+                                <Ban size={13} /> Ban User
+                              </>
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveUser(u)}
+                            className="btn btn-danger"
+                            style={{
+                              padding: '5px 10px',
+                              fontSize: '0.75rem',
+                              display: 'inline-flex'
+                            }}
+                          >
+                            <Trash2 size={13} /> Remove User
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>

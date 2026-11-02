@@ -222,4 +222,32 @@ describe('SkillSwap Virtual Credit Escrow & Lifecycle Suite (UT-01 to UT-07)', (
     const adminCheck = await verifySessionMember(sessionId, '664f1a2b3c4d5e6f7a8b9c00', 'ADMIN');
     expect(adminCheck.allowed).toBe(true);
   });
+
+  test('UT-10: Admin User Removal (DELETE /api/admin/users/:userId removes user & profile and protects Admin)', async () => {
+    const adminLogin = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'admin@skillswap.io', password: 'StrongPassword123!' });
+
+    const targetId = '664f1a2b3c4d5e6f7a8b9c96'; // Emily Watson
+
+    const delRes = await request(app)
+      .delete(`/api/admin/users/${targetId}`)
+      .set('Authorization', `Bearer ${adminLogin.body.token}`);
+
+    expect(delRes.statusCode).toBe(200);
+    expect(delRes.body.success).toBe(true);
+    expect(delRes.body.removedUser._id).toBe(targetId);
+
+    const store = getStore();
+    const stillExists = store.users.find((u) => String(u._id) === targetId);
+    expect(stillExists).toBe(undefined);
+
+    // Admin cannot delete themselves
+    const selfDelRes = await request(app)
+      .delete('/api/admin/users/664f1a2b3c4d5e6f7a8b9c00')
+      .set('Authorization', `Bearer ${adminLogin.body.token}`);
+
+    expect(selfDelRes.statusCode).toBe(403);
+    expect(selfDelRes.body.error.code).toBe('FORBIDDEN_OPERATION');
+  });
 });

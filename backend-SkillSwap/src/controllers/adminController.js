@@ -452,10 +452,215 @@ const toggleBanUser = async (req, res, next) => {
   }
 };
 
+// Feature #55: DELETE /api/admin/users/:userId (Permanently Remove User & Refund Any Active Escrow)
+const removeUser = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const actorId = req.user ? req.user.userId : null;
+
+    if (String(userId) === String(actorId)) {
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: 'FORBIDDEN_OPERATION',
+          httpStatus: 403,
+          message: 'An Administrator cannot delete their own account.'
+        }
+      });
+    }
+
+    // Disconnect active socket if the removed user is online
+    const io = req.app.get('io');
+    const userSockets = req.app.get('userSockets');
+    if (io && userSockets && userSockets.has(String(userId))) {
+      const socketId = userSockets.get(String(userId));
+      const sock = io.sockets.sockets.get(socketId);
+      if (sock) sock.disconnect(true);
+      userSockets.delete(String(userId));
+    }
+
+    if (isMongoConnected()) {
+      const dbSession = await mongoose.startSession();
+      let removedPayload = null;
+      let httpErr = null;
+
+      try {
+        await dbSession.withTransaction(async () => {
+          const user = await User.findById(userId).session(dbSession);
+          if (!user) {
+            httpErr = {
+              status: 404,
+              code: 'USER_NOT_FOUND',
+              message: 'User not found.'
+            };
+            throw new Error('ABORT_TX');
+          }
+
+          if (user.role === 'ADMIN') {
+            httpErr = {
+              status: 403,
+              code: 'FORBIDDEN_OPERATION',
+              message: 'Cannot remove another Administrator account.'
+            };
+            throw new Error('ABORT_TX');
+          }
+
+          const profile = await UserProfile.findOne({ userId: user._id }).session(dbSession);
+          const displayName = profile ? profile.displayName : user.email;
+
+          // If the removed user is a Mentor on any PENDING/ACTIVE/DISPUTED sessions, refund learners first
+          const mentorActiveSessions = await Session.find({
+            mentorId: user._id,
+            status: { $in: ['PENDING', 'ACTIVE', 'DISPUTED'] }
+          }).session(dbSession);
+
+          for (const s of mentorActiveSessions) {
+            const refundAmt = s.creditsLocked || 50;
+            const learner = await User.findById(s.learnerId).session(dbSession);
+            if (learner) {
+              learner.credits += refundAmt;
+              await learner.save({ session: dbSession });
+              await Transaction.create(
+                [
+                  {
+                    userId: learner._id,
+                    sessionId: s._id,
+                    type: 'REFUND',
+                    amount: refundAmt,
+                    balanceAfter: learner.credits,
+                    description: `Admin Account Removal Refund (+${refundAmt} CR) for ${s.skillName}`
+                  }
+                ],
+                { session: dbSession }
+              );
+            }
+          }
+
+          // Delete user's sessions, profile, and account
+          const userSessions = await Session.find({
+            $or: [{ learnerId: user._id }, { mentorId: user._id }]
+          }).session(dbSession);
+          const sessionIds = userSessions.map((s) => s._id);
+          if (sessionIds.length > 0) {
+            await ChatLog.deleteMany({ sessionId: { $in: sessionIds } }).session(dbSession);
+            await Session.deleteMany({ _id: { $in: sessionIds } }).session(dbSession);
+          }
+
+          await Transaction.deleteMany({ userId: user._id }).session(dbSession);
+          await UserProfile.deleteOne({ userId: user._id }).session(dbSession);
+          await User.deleteOne({ _id: user._id }).session(dbSession);
+
+          removedPayload = {
+            _id: String(user._id),
+            email: user.email,
+            displayName
+          };
+        });
+      } catch (txErr) {
+        if (httpErr) {
+          return res.status(httpErr.status).json({
+            success: false,
+            error: {
+              code: httpErr.code,
+              httpStatus: httpErr.status,
+              message: httpErr.message
+            }
+          });
+        }
+        throw txErr;
+      } finally {
+        await dbSession.endSession();
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: `User ${removedPayload.displayName} (${removedPayload.email}) has been permanently removed.`,
+        removedUser: removedPayload
+      });
+    }
+
+    // In-Memory Store path
+    const store = getStore();
+    const userIndex = store.users.findIndex((u) => String(u._id) === String(userId));
+    if (userIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'USER_NOT_FOUND', httpStatus: 404, message: 'User not found.' }
+      });
+    }
+
+    const targetUser = store.users[userIndex];
+    if (targetUser.role === 'ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: 'FORBIDDEN_OPERATION',
+          httpStatus: 403,
+          message: 'Cannot remove another Administrator account.'
+        }
+      });
+    }
+
+    const profile = store.userProfiles.find((p) => String(p.userId) === String(userId));
+    const displayName = profile ? profile.displayName : targetUser.email;
+
+    // Refund learners on any active sessions where removed user was Mentor
+    store.sessions.forEach((s) => {
+      if (
+        String(s.mentorId) === String(userId) &&
+        ['PENDING', 'ACTIVE', 'DISPUTED'].includes(s.status)
+      ) {
+        const refundAmt = s.creditsLocked || 50;
+        const learner = store.users.find((u) => String(u._id) === String(s.learnerId));
+        if (learner) {
+          learner.credits += refundAmt;
+          store.transactions.unshift({
+            _id: generateId(),
+            userId: String(learner._id),
+            sessionId: s._id,
+            type: 'REFUND',
+            amount: refundAmt,
+            balanceAfter: learner.credits,
+            description: `Admin Account Removal Refund (+${refundAmt} CR) for ${s.skillName}`,
+            createdAt: new Date()
+          });
+        }
+      }
+    });
+
+    // Remove user's sessions, chatLogs, transactions, profile, and user record
+    const removedSessionIds = new Set(
+      store.sessions
+        .filter((s) => String(s.learnerId) === String(userId) || String(s.mentorId) === String(userId))
+        .map((s) => String(s._id))
+    );
+    store.chatLogs = store.chatLogs.filter((c) => !removedSessionIds.has(String(c.sessionId)));
+    store.sessions = store.sessions.filter(
+      (s) => String(s.learnerId) !== String(userId) && String(s.mentorId) !== String(userId)
+    );
+    store.transactions = store.transactions.filter((t) => String(t.userId) !== String(userId));
+    store.userProfiles = store.userProfiles.filter((p) => String(p.userId) !== String(userId));
+    store.users.splice(userIndex, 1);
+
+    return res.status(200).json({
+      success: true,
+      message: `User ${displayName} (${targetUser.email}) has been permanently removed.`,
+      removedUser: {
+        _id: String(targetUser._id),
+        email: targetUser.email,
+        displayName
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getDisputedSessions,
   approveDisputeRefund,
   rejectDisputeReleaseToMentor,
   getAllUsers,
-  toggleBanUser
+  toggleBanUser,
+  removeUser
 };
