@@ -140,9 +140,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      setToken(savedToken);
-      await refreshProfile();
-      setIsLoadingAuth(false);
+      try {
+        setToken(savedToken);
+        await refreshProfile();
+      } catch (err) {
+        console.error('Failed to restore authentication session:', err);
+        clearSessionState();
+      } finally {
+        setIsLoadingAuth(false);
+      }
     };
 
     initAuth();

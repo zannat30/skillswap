@@ -68,6 +68,23 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Strict Database Guard Middleware (In-memory fallback disabled)
+app.use('/api', (req, res, next) => {
+  if (req.path === '/health') return next();
+  const { isMongoConnected } = require('./src/config/db');
+  if (!isMongoConnected()) {
+    return res.status(503).json({
+      success: false,
+      error: {
+        code: 'DATABASE_ERROR',
+        httpStatus: 503,
+        message: 'Data fetching error from database: MongoDB Atlas is unreachable. In-memory fallback has been permanently disabled.'
+      }
+    });
+  }
+  next();
+});
+
 // REST API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);

@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { SocketProvider } from '@/context/SocketContext';
+import { DatabaseErrorModal } from '@/components/DatabaseErrorModal';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -23,7 +24,10 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <AuthProvider>
-          <SocketProvider>{children}</SocketProvider>
+          <SocketProvider>
+            {children}
+            <DatabaseErrorModal />
+          </SocketProvider>
         </AuthProvider>
       </body>
     </html>

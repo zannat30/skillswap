@@ -74,7 +74,7 @@ const connectDB = async () => {
     return true;
   } catch (error) {
     mongoConnected = false;
-    console.log(`[MongoDB Atlas]    ⚡ Cloud/Local daemon unreachable (${error.message}). Operating with High-Availability In-Memory Store.`);
+    console.error(`[MongoDB Atlas]    ❌ Connection failed (${error.message}). In-memory fallback is disabled.`);
     return false;
   }
 };

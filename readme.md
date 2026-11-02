@@ -26,17 +26,16 @@
 9. [Domain Boundary Enforcement & Content Moderation Policies](#9-domain-boundary-enforcement--content-moderation-policies)
 10. [User Roles & End-to-End Operational Workflows](#10-user-roles--end-to-end-operational-workflows)
 11. [Database Engineering & Mongoose ODM Schemas](#11-database-engineering--mongoose-odm-schemas)
-12. [Complete RESTful API Reference & Payload Contracts](#12-complete-restful-api-reference--payload-contracts)
-13. [Real-Time WebSocket (Socket.io) Event Architecture](#13-real-time-websocket-socketio-event-architecture)
-14. [Security Architecture (CIA Triad Implementation)](#14-security-architecture-cia-triad-implementation)
-15. [Complete Local Installation & Setup Guide](#15-complete-local-installation--setup-guide)
-16. [MongoDB Atlas Cloud Provisioning & Indexing Guide](#16-mongodb-atlas-cloud-provisioning--indexing-guide)
-17. [Google Gemini AI Studio Configuration Guide](#17-google-gemini-ai-studio-configuration-guide)
-18. [Exhaustive Environment Variables Reference (`.env`)](#18-exhaustive-environment-variables-reference-env)
-19. [System Testing, Unit Test Suites & QA Benchmarks](#19-system-testing-unit-test-suites--qa-benchmarks)
-20. [Troubleshooting & Standard Error Code Dictionary](#20-troubleshooting--standard-error-code-dictionary)
-21. [Product Roadmap & Future Engineering Phases](#21-product-roadmap--future-engineering-phases)
-22. [Academic Authority, Contributors & License](#22-academic-authority-contributors--license)
+12. [Real-Time WebSocket (Socket.io) Event Architecture](#12-real-time-websocket-socketio-event-architecture)
+13. [Security Architecture (CIA Triad Implementation)](#13-security-architecture-cia-triad-implementation)
+14. [Complete Local Installation & Setup Guide](#14-complete-local-installation--setup-guide)
+15. [MongoDB Atlas Cloud Provisioning & Indexing Guide](#15-mongodb-atlas-cloud-provisioning--indexing-guide)
+16. [Google Gemini AI Studio Configuration Guide](#16-google-gemini-ai-studio-configuration-guide)
+17. [Exhaustive Environment Variables Reference (`.env`)](#17-exhaustive-environment-variables-reference-env)
+18. [System Testing, Unit Test Suites & QA Benchmarks](#18-system-testing-unit-test-suites--qa-benchmarks)
+19. [Troubleshooting & Standard Error Code Dictionary](#19-troubleshooting--standard-error-code-dictionary)
+20. [Product Roadmap & Future Engineering Phases](#20-product-roadmap--future-engineering-phases)
+21. [Academic Authority, Contributors & License](#21-academic-authority-contributors--license)
 
 ---
 
@@ -484,22 +483,6 @@ To uphold academic integrity and shield the platform from legal liability, Skill
 | **Licensed Professional Advice** | ❌ **PROHIBITED** | Medical diagnosis, prescription advice, certified legal representation, tax auditing | `403 FORBIDDEN_DOMAIN` |
 | **Physical Offline Services** | ❌ **PROHIBITED** | Plumbing, electrical wiring, carpentry, home appliance repair, physical courier | `403 FORBIDDEN_DOMAIN` |
 
-### 9.2 Server-Side Enforcement Payload
-
-When a client attempts to register a skill or book a session matching prohibited keywords or categories, the Express middleware immediately aborts execution and returns:
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "FORBIDDEN_DOMAIN",
-    "httpStatus": 403,
-    "message": "Session requests or skill listings involving Academic Fraud, Illegal Services, Licensed Medical/Legal Advice, or Physical Labor are strictly prohibited under SkillSwap Policy.",
-    "flaggedInput": "Solve my final semester exam live"
-  }
-}
-```
-
 ---
 
 ## 10. User Roles & End-to-End Operational Workflows
@@ -571,327 +554,11 @@ SkillSwap utilizes 5 normalized collections in **MongoDB Atlas**. Multi-document
 +------------------------+
 ```
 
-### Complete Mongoose Schema Definitions
-
-#### 11.1 `models/User.js`
-```javascript
-const mongoose = require('mongoose');
-
-const UserSchema = new mongoose.Schema({
-  email: {
-    type: String,
-    required: [true, 'Email is required'],
-    unique: true,
-    lowercase: true,
-    trim: true,
-    index: true
-  },
-  passwordHash: {
-    type: String,
-    required: [true, 'Password hash is required'],
-    select: false // Excluded from default queries for confidentiality
-  },
-  role: {
-    type: String,
-    enum: ['USER', 'ADMIN'],
-    default: 'USER'
-  },
-  credits: {
-    type: Number,
-    default: 100,
-    min: [0, 'Wallet credits cannot be negative']
-  },
-  streakCount: {
-    type: Number,
-    default: 1
-  },
-  lastLogin: {
-    type: Date,
-    default: Date.now
-  },
-  isBanned: {
-    type: Boolean,
-    default: false
-  }
-}, { timestamps: true });
-
-module.exports = mongoose.model('User', UserSchema);
-```
-
-#### 11.2 `models/UserProfile.js`
-```javascript
-const mongoose = require('mongoose');
-
-const SkillItemSchema = new mongoose.Schema({
-  skill: { type: String, required: true, trim: true },
-  domain: {
-    type: String,
-    enum: ['Technology', 'Creative Arts', 'Languages', 'Academics'],
-    required: true
-  },
-  level: {
-    type: String,
-    enum: ['BEGINNER', 'INTERMEDIATE', 'EXPERT'],
-    default: 'INTERMEDIATE'
-  }
-});
-
-const UserProfileSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    unique: true,
-    index: true
-  },
-  displayName: {
-    type: String,
-    required: true,
-    trim: true,
-    maxlength: 60
-  },
-  bio: {
-    type: String,
-    default: 'Passionate peer learner and mentor on SkillSwap.',
-    maxlength: 500
-  },
-  skillsHave: [SkillItemSchema],
-  skillsWant: [SkillItemSchema],
-  availability: [{
-    date: { type: String, required: true }, // Format: YYYY-MM-DD
-    slots: [{ type: String, required: true }] // Format: ["14:00-15:00"]
-  }],
-  rating: {
-    type: Number,
-    default: 5.0,
-    min: 1.0,
-    max: 5.0
-  },
-  totalSessions: {
-    type: Number,
-    default: 0
-  }
-}, { timestamps: true });
-
-// Compound text index for fast Marketplace search
-UserProfileSchema.index({ 'skillsHave.skill': 'text', displayName: 'text', bio: 'text' });
-
-module.exports = mongoose.model('UserProfile', UserProfileSchema);
-```
-
-#### 11.3 `models/Session.js`
-```javascript
-const mongoose = require('mongoose');
-
-const SessionSchema = new mongoose.Schema({
-  learnerId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    index: true
-  },
-  mentorId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    index: true
-  },
-  status: {
-    type: String,
-    enum: ['PENDING', 'ACTIVE', 'COMPLETED', 'DISPUTED', 'CANCELLED', 'REFUNDED'],
-    default: 'PENDING',
-    index: true
-  },
-  skillName: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  domain: {
-    type: String,
-    enum: ['Technology', 'Creative Arts', 'Languages', 'Academics'],
-    required: true
-  },
-  scheduledTime: {
-    type: Date,
-    required: true
-  },
-  startedAt: {
-    type: Date
-  },
-  completedAt: {
-    type: Date
-  },
-  creditsLocked: {
-    type: Number,
-    default: 50,
-    immutable: true
-  },
-  meetingLink: {
-    type: String,
-    default: 'https://meet.google.com/new'
-  },
-  disputeReason: {
-    type: String,
-    default: ''
-  },
-  feedback: {
-    rating: { type: Number, min: 1, max: 5 },
-    comment: { type: String, maxlength: 400 },
-    submittedAt: { type: Date }
-  }
-}, { timestamps: true });
-
-module.exports = mongoose.model('Session', SessionSchema);
-```
-
-#### 11.4 `models/Transaction.js`
-```javascript
-const mongoose = require('mongoose');
-
-const TransactionSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    index: true
-  },
-  sessionId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Session',
-    default: null
-  },
-  type: {
-    type: String,
-    enum: ['BONUS', 'ESCROW_LOCK', 'RELEASE', 'REFUND', 'BURN'],
-    required: true
-  },
-  amount: {
-    type: Number,
-    required: true // e.g., +100, -50, +45, -5
-  },
-  description: {
-    type: String,
-    required: true
-  }
-}, { timestamps: true });
-
-module.exports = mongoose.model('Transaction', TransactionSchema);
-```
+---
 
 ---
 
-## 12. Complete RESTful API Reference & Payload Contracts
-
-All protected endpoints require the HTTP header: `Authorization: Bearer <JWT_TOKEN>`.
-
-### 12.1 Authentication Endpoints
-
-#### `POST /api/auth/register`
-Creates a new user account, initializes their profile, and grants $+100\text{ CR}$ registration bonus.
-* **Request Body:**
-```json
-{
-  "displayName": "Zannatuz Zubaida Mim",
-  "email": "zannat@ist.edu.bd",
-  "password": "StrongPassword123!"
-}
-```
-* **Response (`201 Created`):**
-```json
-{
-  "success": true,
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {
-    "_id": "664f1a2b3c4d5e6f7a8b9c01",
-    "displayName": "Zannatuz Zubaida Mim",
-    "email": "zannat@ist.edu.bd",
-    "credits": 100,
-    "streakCount": 1
-  }
-}
-```
-
-### 12.2 Session & Escrow Endpoints
-
-#### `POST /api/sessions/book`
-Validates domain compliance, locks $50\text{ CR}$ from learner in Escrow, and creates a `PENDING` session.
-* **Request Body:**
-```json
-{
-  "mentorId": "664f1a2b3c4d5e6f7a8b9c99",
-  "skillName": "React.js State Management",
-  "domain": "Technology",
-  "scheduledTime": "2026-11-10T14:00:00.000Z"
-}
-```
-* **Response (`201 Created`):**
-```json
-{
-  "success": true,
-  "message": "Session booked successfully. 50 Credits locked in Escrow.",
-  "session": {
-    "_id": "665099aabbccddeeff001122",
-    "status": "PENDING",
-    "creditsLocked": 50,
-    "learnerWalletRemaining": 50
-  }
-}
-```
-
-#### `POST /api/sessions/:id/complete`
-Triggered by the Learner clicking **Mark as Learnt**. Executes the atomic 90/10 split.
-* **Request Body:**
-```json
-{
-  "rating": 5,
-  "comment": "Alex explained React hooks and Redux Toolkit very clearly!"
-}
-```
-* **Response (`200 OK`):**
-```json
-{
-  "success": true,
-  "message": "Session completed! 45 Credits released to Mentor, 5 Credits burned.",
-  "settlement": {
-    "sessionId": "665099aabbccddeeff001122",
-    "newStatus": "COMPLETED",
-    "mentorCredited": 45,
-    "platformBurned": 5
-  }
-}
-```
-
-### 12.3 AI SkillBot Endpoints
-
-#### `POST /api/ai/ask`
-Queries Google Gemini AI with context-aware system instructions and matches internal human mentors.
-* **Request Body:**
-```json
-{
-  "question": "Why does my React useEffect run twice on mount, and how can I learn advanced React?"
-}
-```
-* **Response (`200 OK`):**
-```json
-{
-  "success": true,
-  "answer": "In React 18+, `React.StrictMode` intentionally double-invokes effects in development to help detect side-effect cleanup bugs...\n\n### 4-Week React Mastery Roadmap\n1. **Week 1:** JSX, Props, and Component Lifecycle...",
-  "suggestedMentors": [
-    {
-      "userId": "664f1a2b3c4d5e6f7a8b9c99",
-      "displayName": "Alex Rivera",
-      "rating": 4.9,
-      "totalSessions": 124,
-      "matchingSkill": "React.js (Expert)"
-    }
-  ]
-}
-```
-
----
-
-## 13. Real-Time WebSocket (Socket.io) Event Architecture
+## 12. Real-Time WebSocket (Socket.io) Event Architecture
 
 The Socket.io server maintains authoritative state over active sessions so that neither user can manipulate the session countdown timer by altering their local system clock.
 
@@ -928,7 +595,7 @@ The Socket.io server maintains authoritative state over active sessions so that 
 
 ---
 
-## 14. Security Architecture (CIA Triad Implementation)
+## 13. Security Architecture (CIA Triad Implementation)
 
 SkillSwap is engineered around the three core pillars of foundational computer security:
 
@@ -949,7 +616,7 @@ SkillSwap is engineered around the three core pillars of foundational computer s
 
 ---
 
-## 15. Complete Local Installation & Setup Guide
+## 14. Complete Local Installation & Setup Guide
 
 Follow these exact steps to spin up both the **Backend API Server** and the **Frontend Application** on your local machine (Windows, macOS, or Linux).
 
@@ -1023,7 +690,7 @@ cd skillswap
 
 ---
 
-## 16. MongoDB Atlas Cloud Provisioning & Indexing Guide
+## 15. MongoDB Atlas Cloud Provisioning & Indexing Guide
 
 To set up a free, production-ready cloud database for SkillSwap:
 
@@ -1049,7 +716,7 @@ To set up a free, production-ready cloud database for SkillSwap:
 
 ---
 
-## 17. Google Gemini AI Studio Configuration Guide
+## 16. Google Gemini AI Studio Configuration Guide
 
 SkillSwap uses the official Google Gemini API to power the 24/7 **SkillBot AI**.
 
@@ -1061,7 +728,7 @@ SkillSwap uses the official Google Gemini API to power the 24/7 **SkillBot AI**.
 
 ---
 
-## 18. Exhaustive Environment Variables Reference (`.env`)
+## 17. Exhaustive Environment Variables Reference (`.env`)
 
 ### 18.1 Backend Configuration (`backend-SkillSwap/.env`)
 
@@ -1118,7 +785,7 @@ NEXT_PUBLIC_DEFAULT_SESSION_COST=50
 
 ---
 
-## 19. System Testing, Unit Test Suites & QA Benchmarks
+## 18. System Testing, Unit Test Suites & QA Benchmarks
 
 SkillSwap includes automated unit and integration test suites using **Jest** and **Supertest** to validate the Escrow Wallet engine and Domain Restriction filters.
 
@@ -1142,7 +809,7 @@ npm test
 
 ---
 
-## 20. Troubleshooting & Standard Error Code Dictionary
+## 19. Troubleshooting & Standard Error Code Dictionary
 
 | HTTP Code | Internal Error Code | Cause | Resolution |
 | :--- | :--- | :--- | :--- |
@@ -1155,7 +822,7 @@ npm test
 
 ---
 
-## 21. Product Roadmap & Future Engineering Phases
+## 20. Product Roadmap & Future Engineering Phases
 
 ### Phase 1: MVP Execution (Current Version `v1.0.0` — Completed ✅)
 * [x] Decoupled Next.js Frontend and Express.js REST API Architecture.
@@ -1178,7 +845,7 @@ npm test
 
 ---
 
-## 22. Academic Authority, Contributors & License
+## 21. Academic Authority, Contributors & License
 
 This project report and software engineering implementation were carried out in partial fulfillment of the requirements for the degree of **Bachelor of Science in Computer Science and Engineering (B.Sc. in CSE)** at the **Institute of Science and Technology (IST)**, affiliated with the **National University of Bangladesh**.
 
