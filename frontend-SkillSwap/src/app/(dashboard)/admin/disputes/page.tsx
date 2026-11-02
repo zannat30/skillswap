@@ -17,7 +17,7 @@ import { apiRequest } from '@/lib/apiClient';
 import { useAuth } from '@/context/AuthContext';
 
 export default function AdminDisputesPage() {
-  const { user, switchDemoAccount, refreshProfile } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const [disputes, setDisputes] = useState<Session[]>([]);
   const [usersList, setUsersList] = useState<AdminUserItem[]>([]);
   const [statusMsg, setStatusMsg] = useState<{
@@ -40,7 +40,7 @@ export default function AdminDisputesPage() {
         setUsersList(usrRes.users);
       }
     } catch (err: any) {
-      // If current persona is not ADMIN, prompt or allow 1-click elevation
+      setStatusMsg({ type: 'error', text: err.message });
     } finally {
       setIsLoading(false);
     }
@@ -51,18 +51,6 @@ export default function AdminDisputesPage() {
       loadAdminData();
     }
   }, [user?.role, loadAdminData]);
-
-  const handleElevateToAdmin = async () => {
-    try {
-      await switchDemoAccount('admin@skillswap.io');
-      setStatusMsg({
-        type: 'success',
-        text: 'Authenticated as Platform Administrator (admin@skillswap.io).'
-      });
-    } catch (err: any) {
-      setStatusMsg({ type: 'error', text: err.message });
-    }
-  };
 
   // Feature #52: Admin Approves Learner Refund (+50 CR Learner)
   const handleRefundLearner = async (sessionId: string) => {
@@ -148,16 +136,6 @@ export default function AdminDisputesPage() {
             Inspect frozen 50 CR Escrow sessions, review workspace chat logs, and moderate accounts.
           </p>
         </div>
-
-        {user?.role !== 'ADMIN' && (
-          <button
-            type="button"
-            onClick={handleElevateToAdmin}
-            className="btn btn-primary"
-          >
-            <Shield size={16} /> Switch to Admin Role (JWT)
-          </button>
-        )}
       </div>
 
       {user?.role !== 'ADMIN' && (
@@ -165,24 +143,14 @@ export default function AdminDisputesPage() {
           className="glass-panel p-6 border-radius-16 mb-6"
           style={{ borderColor: 'var(--accent-amber)' }}
         >
-          <div className="flex items-center justify-between" style={{ flexWrap: 'wrap', gap: '12px' }}>
-            <div>
-              <h3 className="text-lg font-bold text-amber">
-                Administrator Privileges Required (RBAC Guard)
-              </h3>
-              <p className="text-secondary text-sm mt-1">
-                You are currently signed in as <strong>{user?.displayName}</strong> ({user?.role}).
-                Click <strong>Switch to Admin Role</strong> to authenticate as{' '}
-                <code>admin@skillswap.io</code> and unlock Escrow Arbitration &amp; User Moderation.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleElevateToAdmin}
-              className="btn btn-primary"
-            >
-              <Shield size={16} /> Authenticate as Admin
-            </button>
+          <div>
+            <h3 className="text-lg font-bold text-amber">
+              Administrator Privileges Required (RBAC Guard)
+            </h3>
+            <p className="text-secondary text-sm mt-1">
+              Access denied. Please sign in with the Super Admin account (
+              <code>admin@admin.com</code>) to access Escrow Arbitration &amp; User Moderation.
+            </p>
           </div>
         </div>
       )}

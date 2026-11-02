@@ -12,9 +12,10 @@ import { Input } from '@/components/ui/Input';
 export function LoginForm() {
   const router = useRouter();
   const { loginUser } = useAuth();
-  const [email, setEmail] = useState('zannat@ist.edu.bd');
-  const [password, setPassword] = useState('StrongPassword123!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,6 +27,7 @@ export function LoginForm() {
       return;
     }
 
+    setSubmitting(true);
     try {
       const res = await apiRequest('/auth/login', {
         method: 'POST',
@@ -33,27 +35,37 @@ export function LoginForm() {
       });
       if (res?.success) {
         loginUser(res.token, res.user);
-        router.push('/marketplace');
+        if (res.user?.role === 'ADMIN') {
+          router.push('/admin/disputes');
+        } else {
+          router.push('/marketplace');
+        }
       }
     } catch (err: any) {
-      setError(err.message || 'Invalid credentials');
+      setError(err.message || 'Invalid email or password');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
     <div className="modal-content glass-panel" style={{ maxWidth: '420px' }}>
       <div className="modal-header">
-        <div className="brand" style={{ border: 'none', padding: 0, height: 'auto' }}>
+        <Link
+          href="/"
+          className="brand"
+          style={{ border: 'none', padding: 0, height: 'auto', textDecoration: 'none' }}
+        >
           <div className="logo-box">S</div>
           <h2>
             Skill<span>Swap</span>
           </h2>
-        </div>
+        </Link>
       </div>
       <div className="modal-body">
         <h3 className="text-lg font-bold mb-2">Sign In to Your Account</h3>
         <p className="text-secondary text-sm mb-4">
-          Access your Escrow Wallet and Mentorship Workspace.
+          Enter your credentials to access your Escrow Wallet and Mentorship Workspace.
         </p>
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
@@ -62,6 +74,7 @@ export function LoginForm() {
             </label>
             <Input
               type="email"
+              placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -73,20 +86,31 @@ export function LoginForm() {
             </label>
             <Input
               type="password"
+              placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
           </div>
           {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
-          <Button type="submit" variant="primary" className="w-full justify-center">
-            Sign In
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={submitting}
+            className="w-full justify-center"
+          >
+            {submitting ? 'Signing In...' : 'Sign In'}
           </Button>
         </form>
         <p className="text-secondary text-sm text-center mt-4">
           New to SkillSwap?{' '}
           <Link href="/register" className="text-emerald">
             Create Account (+100 CR Bonus)
+          </Link>
+        </p>
+        <p className="text-secondary text-xs text-center mt-2">
+          <Link href="/" className="text-secondary">
+            ← Back to Landing Page
           </Link>
         </p>
       </div>

@@ -77,8 +77,8 @@ app.get('/api/marketplace/matches', optionalAuth, getBarterMatches);
 app.get('/api/mentors', optionalAuth, getMarketplace);
 
 // Leaderboard Routes (Module 10)
-app.get('/api/leaderboard/mentors', getTopMentors);
-app.get('/api/leaderboard/learners', getTopLearners);
+app.get('/api/leaderboard/mentors', optionalAuth, getTopMentors);
+app.get('/api/leaderboard/learners', optionalAuth, getTopLearners);
 
 // Centralized Error Handler
 app.use(errorHandler);

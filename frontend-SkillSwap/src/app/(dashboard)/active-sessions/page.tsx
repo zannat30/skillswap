@@ -25,27 +25,11 @@ import { apiRequest } from '@/lib/apiClient';
 import { useAuth } from '@/context/AuthContext';
 import { useSocket } from '@/context/SocketContext';
 
-const DEFAULT_ACTIVE_SESSION: Session = {
-  _id: '665099aabbccddeeff001122',
-  learnerId: '664f1a2b3c4d5e6f7a8b9c01',
-  mentorId: '664f1a2b3c4d5e6f7a8b9c99',
-  mentorName: 'Alex Rivera',
-  mentorInitials: 'AR',
-  learnerName: 'Zannat',
-  learnerInitials: 'Z',
-  status: 'ACTIVE',
-  skillName: 'React.js Mentorship',
-  domain: 'Technology',
-  scheduledTime: new Date().toISOString(),
-  creditsLocked: 50,
-  meetingLink: 'https://meet.google.com/skillswap-react-room'
-};
-
 export default function ActiveSessionsPage() {
-  const { user, refreshProfile, switchDemoAccount } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const { socket } = useSocket();
 
-  const [sessions, setSessions] = useState<Session[]>([DEFAULT_ACTIVE_SESSION]);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [historySessions, setHistorySessions] = useState<Session[]>([]);
   const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
 
@@ -64,9 +48,7 @@ export default function ActiveSessionsPage() {
   const [meetingLinkInput, setMeetingLinkInput] = useState<string>('');
 
   // Real-time Session Workspace Chat state (Features #45 & #46)
-  const [openChatSessionId, setOpenChatSessionId] = useState<string | null>(
-    '665099aabbccddeeff001122'
-  );
+  const [openChatSessionId, setOpenChatSessionId] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<Record<string, ChatMessage[]>>({});
   const [chatInput, setChatInput] = useState<string>('');
 
@@ -159,30 +141,16 @@ export default function ActiveSessionsPage() {
     }
   };
 
-  // Feature #32: Start Pending Session (Mentor Only — or Mentor Quick-Start)
-  const handleStartSession = async (session: Session, useMentorQuickStart = false) => {
+  // Feature #32: Start Pending Session (Mentor Only)
+  const handleStartSession = async (session: Session) => {
     setBanner(null);
     try {
-      if (useMentorQuickStart && String(user?._id) !== String(session.mentorId)) {
-        // Authenticate as Alex Rivera (Mentor) to start the session, then switch back to Zannat
-        const prevEmail = user?.email || 'zannat@ist.edu.bd';
-        await switchDemoAccount('alex.rivera@skillswap.io');
-        await apiRequest(`/sessions/${session._id}/start`, { method: 'POST' });
-        if (socket) {
-          socket.emit('start-session-timer', {
-            sessionId: session._id,
-            durationSeconds: 3600
-          });
-        }
-        await switchDemoAccount(prevEmail);
-      } else {
-        await apiRequest(`/sessions/${session._id}/start`, { method: 'POST' });
-        if (socket) {
-          socket.emit('start-session-timer', {
-            sessionId: session._id,
-            durationSeconds: 3600
-          });
-        }
+      await apiRequest(`/sessions/${session._id}/start`, { method: 'POST' });
+      if (socket) {
+        socket.emit('start-session-timer', {
+          sessionId: session._id,
+          durationSeconds: 3600
+        });
       }
       await loadAllSessions();
       await refreshProfile();
@@ -510,14 +478,23 @@ export default function ActiveSessionsPage() {
                       <div className="session-actions mt-4 flex gap-3" style={{ flexWrap: 'wrap' }}>
                         {isPending && (
                           <>
-                            <button
-                              type="button"
-                              className="btn btn-primary"
-                              onClick={() => handleStartSession(session, true)}
-                              title="Starts the 60-minute session timer as Mentor"
-                            >
-                              <Play size={16} /> Start Session (Mentor)
-                            </button>
+                            {String(user?._id) === String(session.mentorId) ? (
+                              <button
+                                type="button"
+                                className="btn btn-primary"
+                                onClick={() => handleStartSession(session)}
+                                title="Starts the 60-minute session timer as Mentor"
+                              >
+                                <Play size={16} /> Start Session
+                              </button>
+                            ) : (
+                              <span
+                                className="text-xs text-secondary"
+                                style={{ alignSelf: 'center' }}
+                              >
+                                Waiting for Mentor ({session.mentorName}) to start session...
+                              </span>
+                            )}
                             <button
                               type="button"
                               className="btn btn-danger"

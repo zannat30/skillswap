@@ -1,3 +1,4 @@
+const User = require('../models/User');
 const UserProfile = require('../models/UserProfile');
 const { isMongoConnected } = require('../config/db');
 const { getStore } = require('../config/memoryStore');
@@ -12,25 +13,17 @@ const getInitials = (name = 'U') => {
 const getTopMentors = async (req, res, next) => {
   try {
     if (isMongoConnected()) {
+      const adminUsers = await User.find({ $or: [{ role: 'ADMIN' }, { isBanned: true }] }).select('_id');
+      const excludedIds = adminUsers.map((u) => u._id);
+
       const mentors = await UserProfile.aggregate([
         {
           $match: {
-            'skillsHave.0': { $exists: true },
-            totalSessions: { $gt: 0 }
+            userId: { $nin: excludedIds },
+            'skillsHave.0': { $exists: true }
           }
         },
-        {
-          $addFields: {
-            effectiveSessions: {
-              $cond: [
-                { $gt: ['$leaderboardSessions', 0] },
-                '$leaderboardSessions',
-                '$totalSessions'
-              ]
-            }
-          }
-        },
-        { $sort: { effectiveSessions: -1, rating: -1 } },
+        { $sort: { totalSessions: -1, rating: -1 } },
         { $limit: 10 }
       ]);
 
@@ -40,32 +33,32 @@ const getTopMentors = async (req, res, next) => {
         displayName: m.displayName,
         initials: getInitials(m.displayName),
         domain: m.skillsHave?.[0]?.domain || 'Technology',
-        sessions: m.effectiveSessions ?? m.totalSessions,
-        rating: m.rating
+        sessions: m.totalSessions || 0,
+        rating: m.rating || 5.0
       }));
 
       return res.status(200).json({ success: true, mentors: formatted });
     }
 
-    // Preserve exact leaderboard order and numbers from leaderboard.html (#1 Sarah Chen 89, #2 Alex Rivera 64, #3 David Kim 56)
     const store = getStore();
-    const mentorIds = [
-      '664f1a2b3c4d5e6f7a8b9c98', // Sarah Chen
-      '664f1a2b3c4d5e6f7a8b9c99', // Alex Rivera
-      '664f1a2b3c4d5e6f7a8b9c97'  // David Kim
-    ];
+    const excludedIds = new Set(
+      store.users
+        .filter((u) => u.role === 'ADMIN' || u.isBanned)
+        .map((u) => String(u._id))
+    );
 
-    const mentors = mentorIds
-      .map((id) => store.userProfiles.find((p) => String(p.userId) === id))
-      .filter(Boolean)
+    const mentors = store.userProfiles
+      .filter((p) => !excludedIds.has(String(p.userId)) && Array.isArray(p.skillsHave) && p.skillsHave.length > 0)
+      .sort((a, b) => (b.totalSessions || 0) - (a.totalSessions || 0) || (b.rating || 5) - (a.rating || 5))
+      .slice(0, 10)
       .map((m, idx) => ({
         rank: idx + 1,
         userId: String(m.userId),
         displayName: m.displayName,
         initials: m.initials || getInitials(m.displayName),
-        domain: m.domain || 'Technology',
-        sessions: m.leaderboardSessions ?? m.totalSessions,
-        rating: m.rating
+        domain: m.skillsHave?.[0]?.domain || 'Technology',
+        sessions: m.totalSessions || 0,
+        rating: m.rating || 5.0
       }));
 
     return res.status(200).json({ success: true, mentors });
@@ -77,9 +70,14 @@ const getTopMentors = async (req, res, next) => {
 // Feature #50: GET /api/leaderboard/learners
 const getTopLearners = async (req, res, next) => {
   try {
+    const currentUserId = req.user ? String(req.user.userId) : '';
+
     if (isMongoConnected()) {
+      const adminUsers = await User.find({ $or: [{ role: 'ADMIN' }, { isBanned: true }] }).select('_id');
+      const excludedIds = adminUsers.map((u) => u._id);
+
       const learners = await UserProfile.find({
-        skillsAcquiredCount: { $gt: 0 }
+        userId: { $nin: excludedIds }
       })
         .sort({ skillsAcquiredCount: -1, totalSessions: -1 })
         .limit(10);
@@ -89,41 +87,31 @@ const getTopLearners = async (req, res, next) => {
         userId: String(l.userId),
         displayName: l.displayName,
         initials: getInitials(l.displayName),
-        skillsAcquired:
-          l.skillsAcquiredCount ||
-          (l.skillsHave?.length || 0) + (l.skillsWant?.length || 0) + 5,
-        isCurrentUser: l.displayName.toLowerCase().includes('zannat')
+        skillsAcquired: l.skillsAcquiredCount || (l.skillsWant?.length || 0),
+        isCurrentUser: String(l.userId) === currentUserId
       }));
       return res.status(200).json({ success: true, learners: formatted });
     }
 
-    // Preserve exact Top Learners from leaderboard.html (#1 Marcus Johnson 14, #2 Zannat (You) 11, #3 Emily Watson 8)
-    const learners = [
-      {
-        rank: 1,
-        userId: '664f1a2b3c4d5e6f7a8b9c95',
-        displayName: 'Marcus Johnson',
-        initials: 'MJ',
-        skillsAcquired: 14,
-        isCurrentUser: false
-      },
-      {
-        rank: 2,
-        userId: '664f1a2b3c4d5e6f7a8b9c01',
-        displayName: 'Zannat',
-        initials: 'Z',
-        skillsAcquired: 11,
-        isCurrentUser: true
-      },
-      {
-        rank: 3,
-        userId: '664f1a2b3c4d5e6f7a8b9c96',
-        displayName: 'Emily Watson',
-        initials: 'EW',
-        skillsAcquired: 8,
-        isCurrentUser: false
-      }
-    ];
+    const store = getStore();
+    const excludedIds = new Set(
+      store.users
+        .filter((u) => u.role === 'ADMIN' || u.isBanned)
+        .map((u) => String(u._id))
+    );
+
+    const learners = store.userProfiles
+      .filter((p) => !excludedIds.has(String(p.userId)))
+      .sort((a, b) => (b.skillsAcquiredCount || 0) - (a.skillsAcquiredCount || 0))
+      .slice(0, 10)
+      .map((l, idx) => ({
+        rank: idx + 1,
+        userId: String(l.userId),
+        displayName: l.displayName,
+        initials: l.initials || getInitials(l.displayName),
+        skillsAcquired: l.skillsAcquiredCount || (l.skillsWant?.length || 0),
+        isCurrentUser: String(l.userId) === currentUserId
+      }));
 
     return res.status(200).json({ success: true, learners });
   } catch (err) {

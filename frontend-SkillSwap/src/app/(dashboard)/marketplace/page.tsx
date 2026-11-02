@@ -8,80 +8,10 @@ import { MentorCard } from '@/features/marketplace/components/MentorCard';
 import { apiRequest } from '@/lib/apiClient';
 import { useAuth } from '@/context/AuthContext';
 
-const INITIAL_MENTORS: Mentor[] = [
-  {
-    _id: '664f1a2b3c4d5e6f7a8b9c99',
-    userId: '664f1a2b3c4d5e6f7a8b9c99',
-    name: 'Alex Rivera',
-    displayName: 'Alex Rivera',
-    initials: 'AR',
-    bio: 'Senior Frontend Architect specializing in React.js, Next.js, and Node.js distributed systems.',
-    rating: 4.9,
-    sessions: 124,
-    totalSessions: 124,
-    domain: 'Technology',
-    category: 'technology',
-    skillsHave: ['React.js', 'Node.js'],
-    skillsWant: ['UI/UX Design'],
-    availability: [
-      { date: '2026-11-10', slots: ['14:00-15:00', '16:00-17:00'] },
-      { date: '2026-11-12', slots: ['19:00-20:00'] }
-    ]
-  },
-  {
-    _id: '664f1a2b3c4d5e6f7a8b9c98',
-    userId: '664f1a2b3c4d5e6f7a8b9c98',
-    name: 'Sarah Chen',
-    displayName: 'Sarah Chen',
-    initials: 'SC',
-    bio: 'Lead Product Designer passionate about Figma design systems, brand identity, and visual storytelling.',
-    rating: 5.0,
-    sessions: 89,
-    totalSessions: 89,
-    domain: 'Creative Arts',
-    category: 'creative',
-    skillsHave: ['Figma', 'Graphic Design'],
-    skillsWant: ['English Speaking'],
-    availability: [{ date: '2026-11-11', slots: ['10:00-11:00', '15:00-16:00'] }]
-  },
-  {
-    _id: '664f1a2b3c4d5e6f7a8b9c97',
-    userId: '664f1a2b3c4d5e6f7a8b9c97',
-    name: 'David Kim',
-    displayName: 'David Kim',
-    initials: 'DK',
-    bio: 'Bilingual linguist & IELTS coach helping learners achieve Band 8.0+ and conversational Korean fluency.',
-    rating: 4.8,
-    sessions: 56,
-    totalSessions: 56,
-    domain: 'Languages',
-    category: 'languages',
-    skillsHave: ['Korean', 'English IELTS'],
-    skillsWant: ['Python'],
-    availability: [{ date: '2026-11-13', slots: ['11:00-12:00', '17:00-18:00'] }]
-  },
-  {
-    _id: '664f1a2b3c4d5e6f7a8b9c96',
-    userId: '664f1a2b3c4d5e6f7a8b9c96',
-    name: 'Emily Watson',
-    displayName: 'Emily Watson',
-    initials: 'EW',
-    bio: 'Graduate researcher in Applied Mathematics teaching University Calculus, Probability, and Statistical Inference.',
-    rating: 4.7,
-    sessions: 42,
-    totalSessions: 42,
-    domain: 'Academics',
-    category: 'academic',
-    skillsHave: ['Statistics', 'Calculus'],
-    skillsWant: ['Data Science'],
-    availability: [{ date: '2026-11-14', slots: ['13:00-14:00', '16:00-17:00'] }]
-  }
-];
-
 export default function MarketplacePage() {
   const router = useRouter();
   const { searchQuery, refreshProfile } = useAuth();
-  const [mentors, setMentors] = useState<Mentor[]>(INITIAL_MENTORS);
+  const [mentors, setMentors] = useState<Mentor[]>([]);
   const [barterMatches, setBarterMatches] = useState<Mentor[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
@@ -103,7 +33,7 @@ export default function MarketplacePage() {
   const fetchMarketplaceData = useCallback(async () => {
     try {
       const res = await apiRequest('/marketplace');
-      if (res?.success && Array.isArray(res.mentors) && res.mentors.length > 0) {
+      if (res?.success && Array.isArray(res.mentors)) {
         setMentors(res.mentors);
       }
       const matchRes = await apiRequest('/marketplace/matches');
@@ -116,7 +46,7 @@ export default function MarketplacePage() {
         );
       }
     } catch (_) {
-      // Keep initial mentors if backend is offline
+      setMentors([]);
     }
   }, []);
 
@@ -318,16 +248,26 @@ export default function MarketplacePage() {
           </button>
         </div>
 
-        <div className="mentors-grid" id="mentors-grid">
-          {filteredMentors.map((mentor) => (
-            <MentorCard
-              key={mentor._id}
-              mentor={mentor}
-              onBook={handleOpenBookingModal}
-              onViewProfile={handleViewMentorProfile}
-            />
-          ))}
-        </div>
+        {filteredMentors.length === 0 ? (
+          <div className="glass-panel p-6 border-radius-16 text-center">
+            <h4 className="font-bold text-lg mb-2">No Mentors Found</h4>
+            <p className="text-secondary text-sm">
+              No mentors have listed teaching skills in this category yet. When registered users add
+              skills under <strong>My Profile → Skills I Have</strong>, they will appear here automatically.
+            </p>
+          </div>
+        ) : (
+          <div className="mentors-grid" id="mentors-grid">
+            {filteredMentors.map((mentor) => (
+              <MentorCard
+                key={mentor._id}
+                mentor={mentor}
+                onBook={handleOpenBookingModal}
+                onViewProfile={handleViewMentorProfile}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Booking Modal (#booking-modal) */}

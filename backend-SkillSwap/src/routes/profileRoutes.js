@@ -44,9 +44,9 @@ router.post('/availability', optionalAuth, addAvailability);
 router.put('/availability/:slotId', optionalAuth, updateAvailability);
 router.delete('/availability/:slotId', optionalAuth, deleteAvailability);
 
-// Public (Features #10, #21, #38)
-router.get('/:userId/availability', getAvailability);
-router.get('/:userId/reviews', getMentorReviews);
-router.get('/:userId', getPublicProfile);
+// Public to Authenticated Users (Features #10, #21, #38)
+router.get('/:userId/availability', optionalAuth, getAvailability);
+router.get('/:userId/reviews', optionalAuth, getMentorReviews);
+router.get('/:userId', optionalAuth, getPublicProfile);
 
 module.exports = router;

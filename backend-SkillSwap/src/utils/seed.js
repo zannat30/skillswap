@@ -23,14 +23,11 @@ const runSeed = async () => {
 
     await User.insertMany(state.users);
     await UserProfile.insertMany(state.userProfiles);
-    await Session.insertMany(state.sessions);
-    await Transaction.insertMany(state.transactions);
-    await ChatLog.insertMany(state.chatLogs);
     await UserProfile.createIndexes().catch(() => {});
-    console.log('[SkillSwap Seeder] ✅ MongoDB Atlas database seeded with mentors, learner, sessions, chat logs & ledger.');
+    console.log('[SkillSwap Seeder] ✅ Database reset: Only Super Admin (admin@admin.com / 12345678) exists. All fake users removed.');
     process.exit(0);
   } else {
-    console.log('[SkillSwap Seeder] ✅ In-memory database initialized with mentors (Alex Rivera, Sarah Chen, David Kim, Emily Watson) & learner (Zannat).');
+    console.log('[SkillSwap Seeder] ✅ In-memory database reset: Only Super Admin (admin@admin.com / 12345678) exists.');
   }
 };
 

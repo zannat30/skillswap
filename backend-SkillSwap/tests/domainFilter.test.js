@@ -3,15 +3,36 @@ const { app } = require('../server');
 const { resetMemoryStore } = require('../src/config/memoryStore');
 
 describe('SkillSwap 403 FORBIDDEN_DOMAIN Boundary Filter Suite (UT-06)', () => {
-  beforeEach(() => {
+  let authToken = '';
+  let mentorId = '';
+
+  beforeEach(async () => {
     resetMemoryStore();
+    const mentorReg = await request(app)
+      .post('/api/auth/register')
+      .send({
+        displayName: 'Domain Mentor',
+        email: 'domain.mentor@ist.edu.bd',
+        password: 'StrongPassword123!'
+      });
+    mentorId = mentorReg.body.user._id;
+
+    const learnerReg = await request(app)
+      .post('/api/auth/register')
+      .send({
+        displayName: 'Domain Learner',
+        email: 'domain.learner@ist.edu.bd',
+        password: 'StrongPassword123!'
+      });
+    authToken = learnerReg.body.token;
   });
 
   test('UT-06: Prohibited Academic Fraud Booking Rejection ("Solve my final semester exam live")', async () => {
     const res = await request(app)
       .post('/api/sessions/book')
+      .set('Authorization', `Bearer ${authToken}`)
       .send({
-        mentorId: '664f1a2b3c4d5e6f7a8b9c99',
+        mentorId,
         skillName: 'Solve my final semester exam live',
         domain: 'Technology'
       });
@@ -25,6 +46,7 @@ describe('SkillSwap 403 FORBIDDEN_DOMAIN Boundary Filter Suite (UT-06)', () => {
   test('Rejects Illegal Cyber Activities in Profile Skills ("Black-hat DDoS execution")', async () => {
     const res = await request(app)
       .post('/api/profile/skills-have')
+      .set('Authorization', `Bearer ${authToken}`)
       .send({
         skill: 'Black-hat DDoS execution',
         domain: 'Technology',
@@ -38,6 +60,7 @@ describe('SkillSwap 403 FORBIDDEN_DOMAIN Boundary Filter Suite (UT-06)', () => {
   test('Rejects Physical Offline Services ("Plumbing and electrical wiring")', async () => {
     const res = await request(app)
       .post('/api/profile/skills-have')
+      .set('Authorization', `Bearer ${authToken}`)
       .send({
         skill: 'Plumbing and electrical wiring',
         domain: 'Physical Offline Services'
@@ -50,6 +73,7 @@ describe('SkillSwap 403 FORBIDDEN_DOMAIN Boundary Filter Suite (UT-06)', () => {
   test('Allows Permitted Domains (Technology, Creative Arts, Languages, Academics)', async () => {
     const res = await request(app)
       .post('/api/profile/skills-have')
+      .set('Authorization', `Bearer ${authToken}`)
       .send({
         skill: 'Next.js App Router',
         domain: 'Technology',
