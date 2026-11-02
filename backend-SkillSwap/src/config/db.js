@@ -1,9 +1,17 @@
+const dns = require('dns');
 const path = require('path');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const UserProfile = require('../models/UserProfile');
+
+// Configure reliable DNS servers for MongoDB Atlas SRV resolution (fixes ECONNREFUSED on local ISP/Windows DNS)
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
+} catch (_) {
+  // Use default if setServers is unavailable
+}
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
