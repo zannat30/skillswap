@@ -8,45 +8,80 @@ import {
   BookOpen,
   MessageSquare,
   User as UserIcon,
+  Wallet,
   Trophy,
-  ShieldAlert
+  ShieldAlert,
+  X
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
-export function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const { activeSessionsCount, user } = useAuth();
+  const { activeSessionsCount, availableCredits, user } = useAuth();
 
   const isMarketplaceActive = pathname.startsWith('/marketplace');
   const isSessionsActive = pathname.startsWith('/active-sessions');
   const isSkillbotActive = pathname.startsWith('/ai-skillbot');
   const isProfileActive = pathname.startsWith('/profile');
+  const isWalletActive = pathname.startsWith('/wallet');
   const isLeaderboardActive = pathname.startsWith('/leaderboard');
   const isAdminActive = pathname.startsWith('/admin');
 
+  const handleNavClick = () => {
+    if (onClose) onClose();
+  };
+
   return (
     <aside
-      className="sidebar"
+      className={`sidebar ${isOpen ? 'sidebar--open' : ''}`}
       style={{
         background: '#09090b',
         borderRight: '1px solid var(--shadcn-border)'
       }}
     >
-      <Link
-        href="/marketplace"
-        className="brand"
-        style={{ borderBottom: '1px solid var(--shadcn-border)' }}
+      <div
+        className="brand flex items-center justify-between"
+        style={{ borderBottom: '1px solid var(--shadcn-border)', width: '100%' }}
       >
-        <div className="logo-box">S</div>
-        <h2>
-          Skill<span>Swap</span>
-        </h2>
-      </Link>
+        <Link
+          href="/marketplace"
+          onClick={handleNavClick}
+          className="flex items-center gap-3"
+          style={{ textDecoration: 'none', color: 'inherit' }}
+        >
+          <div className="logo-box">S</div>
+          <h2>
+            Skill<span>Swap</span>
+          </h2>
+        </Link>
+
+        {/* Mobile close drawer button */}
+        {onClose && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="md:hidden sidebar-close-btn"
+            style={{ color: 'var(--shadcn-muted-fg)' }}
+            aria-label="Close sidebar"
+          >
+            <X size={18} />
+          </Button>
+        )}
+      </div>
+
       <nav className="sidebar-nav">
         <p className="nav-label">Main Menu</p>
         <Link
           href="/marketplace"
+          onClick={handleNavClick}
           className={`nav-item ${isMarketplaceActive ? 'active' : ''}`}
         >
           <Compass size={18} />
@@ -54,6 +89,7 @@ export function Sidebar() {
         </Link>
         <Link
           href="/active-sessions"
+          onClick={handleNavClick}
           className={`nav-item ${isSessionsActive ? 'active' : ''}`}
         >
           <BookOpen size={18} />
@@ -66,6 +102,7 @@ export function Sidebar() {
         </Link>
         <Link
           href="/ai-skillbot"
+          onClick={handleNavClick}
           className={`nav-item ${isSkillbotActive ? 'active' : ''}`}
         >
           <MessageSquare size={18} />
@@ -73,13 +110,26 @@ export function Sidebar() {
         </Link>
         <Link
           href="/profile"
+          onClick={handleNavClick}
           className={`nav-item ${isProfileActive ? 'active' : ''}`}
         >
           <UserIcon size={18} />
           <span>My Profile</span>
         </Link>
         <Link
+          href="/wallet"
+          onClick={handleNavClick}
+          className={`nav-item ${isWalletActive ? 'active' : ''}`}
+        >
+          <Wallet size={18} />
+          <span>Virtual Wallet</span>
+          <Badge variant="emerald" style={{ marginLeft: 'auto', fontSize: '0.7rem' }}>
+            {availableCredits} CR
+          </Badge>
+        </Link>
+        <Link
           href="/leaderboard"
+          onClick={handleNavClick}
           className={`nav-item ${isLeaderboardActive ? 'active' : ''}`}
         >
           <Trophy size={18} />
@@ -93,6 +143,7 @@ export function Sidebar() {
             </p>
             <Link
               href="/admin/disputes"
+              onClick={handleNavClick}
               className={`nav-item ${isAdminActive ? 'active' : ''}`}
             >
               <ShieldAlert size={18} />

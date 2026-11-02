@@ -1441,3 +1441,386 @@ body {
     line-height: 1.5;
     opacity: 0.92;
 }
+
+
+/* ==========================================================================
+   Comprehensive 5-Tier Device Responsiveness System (shadcn/ui Compliant)
+   Tier 1: Desktop / Laptop (1025px+)
+   Tier 2: Big Tablet / iPad Pro (769px - 1024px)
+   Tier 3: Standard Tablet / iPad Mini (481px - 768px)
+   Tier 4: Pro Max Mobile / Large Phones (391px - 480px)
+   Tier 5: Small Mobile / Standard Phones (320px - 390px, e.g. 375x667px)
+   ========================================================================== */
+
+/* Base Defaults & Utility Defaults */
+.sidebar-backdrop {
+    display: none;
+}
+.sidebar-close-btn {
+    display: none;
+}
+.navbar-toggle-btn {
+    display: none;
+}
+.landing-mobile-toggle {
+    display: none;
+}
+.landing-desktop-nav {
+    display: flex;
+}
+.landing-desktop-actions {
+    display: flex;
+}
+.landing-mobile-menu {
+    display: none;
+}
+.table-responsive-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* --------------------------------------------------------------------------
+   TIER 2 & LOWER: Screens <= 1024px (Tablets & Mobiles)
+   - Sidebar transforms into a slide-over mobile drawer with backdrop overlay
+   - Hamburger menu button activated in navbar
+   -------------------------------------------------------------------------- */
+@media (max-width: 1024px) {
+    .app-layout {
+        position: relative;
+        overflow: hidden;
+        width: 100vw;
+        height: 100vh;
+    }
+
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 280px;
+        max-width: 82vw;
+        height: 100vh;
+        z-index: 100;
+        transform: translateX(-100%);
+        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: none;
+    }
+
+    .sidebar.sidebar--open {
+        transform: translateX(0);
+        box-shadow: 10px 0 32px rgba(0, 0, 0, 0.8);
+    }
+
+    .sidebar-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.72);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 90;
+        animation: fadeIn 0.2s ease-out;
+    }
+
+    .sidebar-close-btn {
+        display: inline-flex !important;
+    }
+
+    .navbar-toggle-btn {
+        display: inline-flex !important;
+    }
+
+    .main-wrapper {
+        width: 100vw;
+        min-width: 0;
+    }
+
+    #app-view {
+        padding: 24px 20px;
+    }
+
+    .profile-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .leaderboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   TIER 3 & LOWER: Screens <= 768px (Standard Tablets & Large Mobile)
+   - Landing page switches to hamburger header
+   - Section hero scales down, padding tightened
+   - Tables and session workspaces stack
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+    /* Landing Header & Navigation */
+    .landing-header {
+        padding: 0 16px !important;
+        height: 64px !important;
+    }
+
+    .landing-desktop-nav {
+        display: none !important;
+    }
+
+    .landing-desktop-actions {
+        display: none !important;
+    }
+
+    .landing-mobile-toggle {
+        display: inline-flex !important;
+    }
+
+    .landing-mobile-menu {
+        display: flex !important;
+    }
+
+    .landing-main {
+        padding: 88px 16px 60px !important;
+        gap: 60px !important;
+    }
+
+    /* Landing Typography */
+    .hero-title {
+        font-size: 2.3rem !important;
+    }
+
+    .section-title {
+        font-size: 1.85rem !important;
+    }
+
+    .hero-card {
+        padding: 40px 20px !important;
+    }
+
+    /* Dashboard Layout */
+    #app-view {
+        padding: 18px 14px;
+    }
+
+    .skills-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .navbar {
+        padding: 0 16px;
+    }
+
+    .navbar-locked-text {
+        display: none;
+    }
+
+    .search-bar {
+        max-width: 260px;
+    }
+
+    /* Active Session layout */
+    .session-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .session-header .timer-display {
+        margin-left: 0;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   TIER 4 & LOWER: Screens <= 480px (Pro Max Mobile, e.g. 414px - 430px)
+   - Forms, tabs, and buttons adapt to single-column phone ergonomics
+   - Full-width call-to-action buttons
+   - Compact status pills and badges
+   -------------------------------------------------------------------------- */
+@media (max-width: 480px) {
+    .hero-title {
+        font-size: 1.95rem !important;
+    }
+
+    .hero-subtitle {
+        font-size: 0.96rem !important;
+        line-height: 1.6 !important;
+    }
+
+    .section-title {
+        font-size: 1.55rem !important;
+    }
+
+    .section-desc {
+        font-size: 0.88rem !important;
+    }
+
+    .hero-card {
+        padding: 32px 14px !important;
+    }
+
+    .hero-cta-group {
+        flex-direction: column;
+        width: 100%;
+        gap: 12px;
+    }
+
+    .hero-cta-group a,
+    .hero-cta-group button {
+        width: 100% !important;
+        justify-content: center;
+    }
+
+    /* Navbar on Phones */
+    .navbar {
+        padding: 0 10px;
+    }
+
+    .navbar-user-info {
+        display: none !important;
+    }
+
+    .search-bar {
+        max-width: 190px;
+    }
+
+    .search-bar input {
+        font-size: 0.8rem;
+        padding-left: 32px;
+        height: 34px;
+    }
+
+    /* Grids to single column */
+    .mentors-grid {
+        grid-template-columns: 1fr !important;
+        gap: 16px;
+    }
+
+    .wallet-stats-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px;
+    }
+
+    .metrics-grid {
+        grid-template-columns: 1fr !important;
+        gap: 10px;
+    }
+
+    .steps-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px;
+    }
+
+    .arch-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px;
+    }
+
+    .domains-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px;
+    }
+
+    /* Tabs wrapping / scroll */
+    .shadcn-tabs-list {
+        width: 100%;
+        justify-content: flex-start;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        padding: 4px;
+    }
+
+    .shadcn-tabs-trigger {
+        font-size: 0.8rem;
+        padding: 6px 10px;
+    }
+
+    /* Modals / Dialogs */
+    .shadcn-dialog-content {
+        padding: 16px 14px !important;
+        max-width: 95vw !important;
+        border-radius: 12px !important;
+    }
+
+    /* Chat Area */
+    .chat-input-area {
+        padding: 12px 10px;
+    }
+
+    .input-wrapper {
+        padding: 6px 8px;
+        gap: 6px;
+    }
+
+    .input-wrapper input {
+        padding: 6px 12px;
+        font-size: 0.9rem;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   TIER 5: Screens <= 390px (Small Mobile, e.g. 375x667px iPhone SE)
+   - Zero horizontal scroll guarantee
+   - Compact margins, borders, and badges
+   -------------------------------------------------------------------------- */
+@media (max-width: 390px) {
+    .landing-header {
+        padding: 0 12px !important;
+    }
+
+    .landing-main {
+        padding: 80px 10px 48px !important;
+        gap: 48px !important;
+    }
+
+    .hero-title {
+        font-size: 1.7rem !important;
+        letter-spacing: -0.02em !important;
+    }
+
+    .hero-subtitle {
+        font-size: 0.9rem !important;
+        margin-bottom: 24px !important;
+    }
+
+    .hero-card {
+        padding: 24px 12px !important;
+    }
+
+    #app-view {
+        padding: 12px 8px;
+    }
+
+    .navbar {
+        padding: 0 8px;
+        gap: 6px;
+    }
+
+    .search-bar {
+        max-width: 150px;
+    }
+
+    .navbar-credit-badge {
+        padding: 5px 8px !important;
+        font-size: 0.76rem !important;
+    }
+
+    .badge {
+        padding: 3px 7px;
+        font-size: 0.68rem;
+    }
+
+    .card-header,
+    .shadcn-card-header {
+        padding: 14px 12px !important;
+    }
+
+    .card-content,
+    .shadcn-card-content {
+        padding: 14px 12px !important;
+    }
+
+    .shadcn-dialog-content {
+        padding: 14px 10px !important;
+        max-width: calc(100vw - 16px) !important;
+    }
+}

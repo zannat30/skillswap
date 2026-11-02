@@ -223,9 +223,9 @@ const login = async (req, res, next) => {
         return res.status(401).json({
           success: false,
           error: {
-            code: 'INVALID_CREDENTIALS',
+            code: 'EMAIL_NOT_REGISTERED',
             httpStatus: 401,
-            message: 'Invalid email or password.'
+            message: 'This email was not registered.'
           }
         });
       }
@@ -248,7 +248,7 @@ const login = async (req, res, next) => {
           error: {
             code: 'INVALID_CREDENTIALS',
             httpStatus: 401,
-            message: 'Invalid email or password.'
+            message: 'Incorrect password. Please try again.'
           }
         });
       }
@@ -291,9 +291,9 @@ const login = async (req, res, next) => {
       return res.status(401).json({
         success: false,
         error: {
-          code: 'INVALID_CREDENTIALS',
+          code: 'EMAIL_NOT_REGISTERED',
           httpStatus: 401,
-          message: 'Invalid email or password.'
+          message: 'This email was not registered.'
         }
       });
     }
@@ -316,7 +316,7 @@ const login = async (req, res, next) => {
         error: {
           code: 'INVALID_CREDENTIALS',
           httpStatus: 401,
-          message: 'Invalid email or password.'
+          message: 'Incorrect password. Please try again.'
         }
       });
     }

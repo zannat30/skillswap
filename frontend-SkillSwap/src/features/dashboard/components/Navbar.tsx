@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Search, Wallet, ChevronDown, Shield, User as UserIcon, LogOut } from 'lucide-react';
+import { Search, Wallet, ChevronDown, Shield, User as UserIcon, LogOut, Menu } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,11 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Card } from '@/components/ui/card';
 
-export function Navbar() {
+interface NavbarProps {
+  onToggleSidebar?: () => void;
+}
+
+export function Navbar({ onToggleSidebar }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const {
@@ -57,54 +61,74 @@ export function Navbar() {
     <header
       className="navbar"
       style={{
-        background: 'rgba(9, 9, 11, 0.85)',
-        borderBottom: '1px solid var(--shadcn-border)'
+        background: 'rgba(9, 9, 11, 0.88)',
+        borderBottom: '1px solid var(--shadcn-border)',
+        position: 'relative'
       }}
     >
-      <div className="search-bar" style={{ position: 'relative', maxWidth: '420px', width: '100%' }}>
-        <Search
-          size={15}
-          style={{
-            position: 'absolute',
-            left: '12px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: 'var(--shadcn-muted-fg)',
-            pointerEvents: 'none'
-          }}
-        />
-        <Input
-          type="text"
-          value={searchQuery}
-          onChange={handleSearchChange}
-          placeholder="Search skills, mentors, or domains..."
-          style={{ paddingLeft: '36px' }}
-        />
+      <div className="flex items-center gap-3" style={{ flex: 1, minWidth: 0, maxWidth: '520px' }}>
+        {/* Mobile Hamburger Toggle Button */}
+        {onToggleSidebar && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggleSidebar}
+            className="md:hidden navbar-toggle-btn"
+            style={{ flexShrink: 0, color: 'var(--shadcn-fg)' }}
+            aria-label="Toggle navigation menu"
+          >
+            <Menu size={20} />
+          </Button>
+        )}
+
+        {/* Global Search Bar */}
+        <div className="search-bar" style={{ position: 'relative', width: '100%', minWidth: 0 }}>
+          <Search
+            size={15}
+            style={{
+              position: 'absolute',
+              left: '12px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--shadcn-muted-fg)',
+              pointerEvents: 'none'
+            }}
+          />
+          <Input
+            type="text"
+            value={searchQuery}
+            onChange={handleSearchChange}
+            placeholder="Search skills, mentors, or domains..."
+            style={{ paddingLeft: '36px', height: '38px', fontSize: '0.86rem' }}
+          />
+        </div>
       </div>
 
-      <div className="nav-actions">
-        <Link href="/profile" style={{ textDecoration: 'none' }}>
+      <div className="nav-actions flex items-center gap-3">
+        {/* Wallet Credit Pill -> Directs to /wallet */}
+        <Link href="/wallet" style={{ textDecoration: 'none' }}>
           <Badge
             variant="emerald"
+            className="navbar-credit-badge"
             style={{
-              padding: '7px 14px',
+              padding: '6px 12px',
               fontSize: '0.82rem',
               cursor: 'pointer',
               gap: '6px'
             }}
-            title={`Locked in Escrow: ${lockedInEscrow} CR`}
+            title={`Locked in Escrow: ${lockedInEscrow} CR. Click to view Virtual Wallet.`}
           >
             <Wallet size={14} />
-            <span>{availableCredits} Credits</span>
+            <span className="navbar-credit-text">{availableCredits} CR</span>
             {lockedInEscrow > 0 && (
-              <span style={{ color: '#fbbf24', marginLeft: '4px' }}>
+              <span className="navbar-locked-text" style={{ color: '#fbbf24', marginLeft: '4px' }}>
                 ({lockedInEscrow} Locked)
               </span>
             )}
           </Badge>
         </Link>
 
-        {/* Authenticated User Profile Popover Menu (shadcn/ui) */}
+        {/* Authenticated User Profile Popover Menu */}
         <div ref={menuRef} style={{ position: 'relative' }}>
           <button
             type="button"
@@ -113,7 +137,7 @@ export function Navbar() {
               background: '#121216',
               border: '1px solid var(--shadcn-border)',
               borderRadius: '9999px',
-              padding: '4px 12px 4px 4px',
+              padding: '4px 10px 4px 4px',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
@@ -126,7 +150,7 @@ export function Navbar() {
                 {user.initials || 'U'}
               </AvatarFallback>
             </Avatar>
-            <div style={{ textAlign: 'left', lineHeight: 1.15 }}>
+            <div className="navbar-user-info" style={{ textAlign: 'left', lineHeight: 1.15 }}>
               <div style={{ fontSize: '0.8rem', fontWeight: 600 }}>{user.displayName}</div>
               <div
                 style={{
@@ -171,7 +195,22 @@ export function Navbar() {
                     className="w-full"
                     style={{ justifyContent: 'flex-start' }}
                   >
-                    <UserIcon size={14} /> My Profile &amp; Wallet
+                    <UserIcon size={14} /> My Profile
+                  </Button>
+                </Link>
+
+                <Link
+                  href="/wallet"
+                  onClick={() => setMenuOpen(false)}
+                  style={{ textDecoration: 'none' }}
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full"
+                    style={{ justifyContent: 'flex-start', color: '#10b981' }}
+                  >
+                    <Wallet size={14} /> Virtual Wallet ({availableCredits} CR)
                   </Button>
                 </Link>
 

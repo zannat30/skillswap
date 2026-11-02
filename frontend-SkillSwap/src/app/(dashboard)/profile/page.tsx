@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import {
   Plus,
   X,
@@ -8,12 +9,15 @@ import {
   Calendar,
   Flame,
   KeyRound,
-  RefreshCw,
   Check,
-  AlertTriangle
+  AlertTriangle,
+  Wallet,
+  ArrowRight,
+  UserCheck,
+  GraduationCap,
+  Target
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { TransactionTable } from '@/features/wallet/components/TransactionTable';
 import { apiRequest } from '@/lib/apiClient';
 import { DomainCategory, SkillItem, SkillLevel } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -47,10 +51,9 @@ const nextLevel = (current: SkillLevel): SkillLevel => {
 };
 
 export default function ProfilePage() {
-  const { user, profile, availableCredits, lockedInEscrow, transactions, refreshProfile } =
-    useAuth();
+  const { user, profile, availableCredits, refreshProfile } = useAuth();
 
-  // Feedback / Error Banner
+  // Feedback Banner
   const [statusMessage, setStatusMessage] = useState<{
     type: 'success' | 'error';
     text: string;
@@ -102,7 +105,7 @@ export default function ProfilePage() {
       });
       await refreshProfile();
       setIsEditingBio(false);
-      showToast('success', 'Profile name and bio updated!');
+      showToast('success', 'Profile name and bio updated successfully!');
     } catch (err: any) {
       showToast('error', err.message || 'Failed to update profile.');
     }
@@ -294,46 +297,47 @@ export default function ProfilePage() {
     }
   };
 
-  // Feature #48: Claim 7-Day Streak Bonus (+20 CR)
-  const handleClaimStreak = async () => {
-    try {
-      const res = await apiRequest('/wallet/claim-streak', { method: 'POST' });
-      await refreshProfile();
-      showToast('success', res.message || '+20 Credit Streak Bonus claimed!');
-    } catch (err: any) {
-      showToast('error', err.message);
-    }
-  };
-
   return (
-    <section className="view active">
-      <div className="flex-between" style={{ flexWrap: 'wrap', gap: '12px' }}>
+    <div className="profile-page" style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {/* Header and Quick Navigation */}
+      <div className="flex-between" style={{ flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <Badge variant="emerald" style={{ marginBottom: '6px' }}>
-            Identity, Skills &amp; Escrow Wallet
-          </Badge>
-          <h2 className="text-2xl font-bold">My Profile &amp; Wallet</h2>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
+              My Profile
+            </h1>
+            <Badge variant="emerald" style={{ gap: '4px' }}>
+              <UserCheck size={12} />
+              <span>Verified Member</span>
+            </Badge>
+          </div>
+          <p className="text-sm text-secondary mt-1">
+            Identity, Skills Inventory &amp; Mentor Availability Calendar
+          </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Badge variant="amber" style={{ padding: '7px 14px', fontSize: '0.82rem' }}>
+        <div className="flex items-center gap-3" style={{ flexWrap: 'wrap' }}>
+          <Badge variant="amber" style={{ padding: '7px 14px', fontSize: '0.82rem', gap: '6px' }}>
             <Flame size={14} />
             <span>
-              <strong>{profile.streakCount} Day</strong> Learning Streak
+              <strong>{profile.streakCount || 1} Day</strong> Learning Streak
             </span>
           </Badge>
-          {profile.streakBonusEligible && (
-            <Button variant="default" size="sm" onClick={handleClaimStreak}>
-              Claim +20 CR
+
+          <Link href="/wallet" style={{ textDecoration: 'none' }}>
+            <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <Wallet size={14} className="text-emerald" />
+              <span>Wallet: <strong>{availableCredits} CR</strong></span>
+              <ArrowRight size={13} className="text-secondary" />
             </Button>
-          )}
+          </Link>
         </div>
       </div>
 
       {statusMessage && (
         <Alert
           variant={statusMessage.type === 'error' ? 'destructive' : 'emerald'}
-          className="mt-4 flex-between"
+          className="flex-between"
         >
           <div className="flex items-center gap-2 font-bold">
             {statusMessage.type === 'error' ? <AlertTriangle size={16} /> : <Check size={16} />}
@@ -345,164 +349,173 @@ export default function ProfilePage() {
         </Alert>
       )}
 
-      <div className="profile-grid mt-6">
-        {/* Left Column: Profile, Skills & Availability (shadcn Card) */}
-        <Card>
-          <CardHeader style={{ borderBottom: '1px solid var(--shadcn-border)' }}>
-            <div className="flex-between">
-              <div className="flex items-center gap-4">
-                <Avatar style={{ height: '56px', width: '56px' }}>
-                  <AvatarFallback style={{ fontSize: '1.25rem' }}>
-                    {user?.initials || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <CardTitle>{profile.displayName || user?.displayName}</CardTitle>
-                  <CardDescription>
-                    Joined {profile.joinedAt || '2026'} • ★ {profile.rating} (
-                    {profile.totalSessions} sessions)
-                  </CardDescription>
-                  {profile.bio && (
-                    <p className="text-secondary text-xs mt-1" style={{ maxWidth: '340px' }}>
-                      {profile.bio}
-                    </p>
-                  )}
+      {/* 1. Identity & Account Card */}
+      <Card>
+        <CardHeader style={{ borderBottom: '1px solid var(--shadcn-border)', padding: '20px 24px' }}>
+          <div className="flex-between" style={{ flexWrap: 'wrap', gap: '16px' }}>
+            <div className="flex items-center gap-4" style={{ flexWrap: 'wrap' }}>
+              <Avatar style={{ height: '64px', width: '64px' }}>
+                <AvatarFallback style={{ fontSize: '1.4rem', background: '#27272a' }}>
+                  {user?.initials || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-xl">{profile.displayName || user?.displayName}</CardTitle>
+                  <Badge variant={user?.role === 'ADMIN' ? 'amber' : 'secondary'} style={{ fontSize: '0.7rem' }}>
+                    {user?.role === 'ADMIN' ? 'ADMIN' : 'MEMBER'}
+                  </Badge>
                 </div>
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setEditDisplayName(profile.displayName);
-                    setEditBioText(profile.bio || '');
-                    setIsEditingBio((prev) => !prev);
-                    setIsChangingPassword(false);
-                  }}
-                  title="Edit Display Name & Bio"
-                >
-                  <Edit3 size={13} /> Edit
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => {
-                    setIsChangingPassword((prev) => !prev);
-                    setIsEditingBio(false);
-                  }}
-                  title="Change Password"
-                >
-                  <KeyRound size={14} />
-                </Button>
+                <CardDescription className="text-xs mt-1">
+                  {user?.email} • Joined {profile.joinedAt || '2026'} • ★ {profile.rating} ({profile.totalSessions} sessions completed)
+                </CardDescription>
+                {profile.bio ? (
+                  <p className="text-secondary text-sm mt-2" style={{ maxWidth: '600px', lineHeight: 1.5 }}>
+                    {profile.bio}
+                  </p>
+                ) : (
+                  <p className="text-secondary text-xs italic mt-2">
+                    No bio added yet. Click &quot;Edit Profile&quot; to write a short introduction.
+                  </p>
+                )}
               </div>
             </div>
-          </CardHeader>
 
-          <CardContent style={{ paddingTop: '24px' }}>
-            {/* Inline Edit Bio Form (Feature #11) */}
-            {isEditingBio && (
-              <form
-                onSubmit={handleSaveBio}
-                className="mb-4"
-                style={{
-                  background: '#09090b',
-                  padding: '14px',
-                  borderRadius: '10px',
-                  border: '1px solid var(--shadcn-border)'
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setEditDisplayName(profile.displayName);
+                  setEditBioText(profile.bio || '');
+                  setIsEditingBio((prev) => !prev);
+                  setIsChangingPassword(false);
                 }}
+                title="Edit Display Name & Bio"
               >
-                <Label>Edit Profile Details</Label>
-                <Input
-                  type="text"
-                  value={editDisplayName}
-                  onChange={(e) => setEditDisplayName(e.target.value)}
-                  placeholder="Display Name"
-                  required
-                  style={{ marginBottom: '8px' }}
-                />
-                <Textarea
-                  value={editBioText}
-                  onChange={(e) => setEditBioText(e.target.value)}
-                  placeholder="Short mentor/learner bio..."
-                  rows={2}
-                  style={{ marginBottom: '10px' }}
-                />
-                <div className="flex gap-2">
-                  <Button type="submit" variant="default" size="sm">
-                    Save Bio
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsEditingBio(false)}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-            )}
-
-            {/* Inline Change Password Form (Feature #6) */}
-            {isChangingPassword && (
-              <form
-                onSubmit={handleChangePassword}
-                className="mb-4"
-                style={{
-                  background: '#09090b',
-                  padding: '14px',
-                  borderRadius: '10px',
-                  border: '1px solid var(--shadcn-border)'
+                <Edit3 size={13} />
+                <span>Edit Profile</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setIsChangingPassword((prev) => !prev);
+                  setIsEditingBio(false);
                 }}
+                title="Change Password"
               >
-                <Label>Change Account Password</Label>
-                <Input
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="Current Password"
-                  required
-                  style={{ marginBottom: '8px' }}
-                />
-                <Input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="New Password (min 6 chars)"
-                  required
-                  style={{ marginBottom: '10px' }}
-                />
-                <div className="flex gap-2">
-                  <Button type="submit" variant="default" size="sm">
-                    Update Password
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsChangingPassword(false)}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-            )}
+                <KeyRound size={13} />
+                <span>Password</span>
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
 
-            {/* Skills I Have Section (Features #12-#15) */}
-            <div className="flex-between mb-3">
-              <h4 className="text-sm text-secondary uppercase tracking-wider font-bold">
-                Skills I Have
-              </h4>
+        {/* Inline Bio & Name Editor */}
+        {isEditingBio && (
+          <CardContent style={{ padding: '20px 24px', background: '#0c0c10', borderBottom: '1px solid var(--shadcn-border)' }}>
+            <form onSubmit={handleSaveBio} style={{ maxWidth: '600px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <Label className="text-sm font-semibold">Edit Display Name &amp; Bio</Label>
+              <Input
+                type="text"
+                value={editDisplayName}
+                onChange={(e) => setEditDisplayName(e.target.value)}
+                placeholder="Display Name"
+                required
+              />
+              <Textarea
+                value={editBioText}
+                onChange={(e) => setEditBioText(e.target.value)}
+                placeholder="Share your mentoring expertise and learning interests..."
+                rows={3}
+              />
+              <div className="flex gap-2">
+                <Button type="submit" variant="default" size="sm">
+                  Save Changes
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditingBio(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        )}
+
+        {/* Inline Change Password Editor */}
+        {isChangingPassword && (
+          <CardContent style={{ padding: '20px 24px', background: '#0c0c10', borderBottom: '1px solid var(--shadcn-border)' }}>
+            <form onSubmit={handleChangePassword} style={{ maxWidth: '450px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <Label className="text-sm font-semibold">Change Account Password</Label>
+              <Input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="Current Password"
+                required
+              />
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="New Password (min 6 characters)"
+                required
+              />
+              <div className="flex gap-2">
+                <Button type="submit" variant="default" size="sm">
+                  Update Password
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsChangingPassword(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        )}
+      </Card>
+
+      {/* 2. Skills Inventory Grid (2 columns on tablet/desktop, 1 column on mobile) */}
+      <div
+        className="skills-grid"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: '20px'
+        }}
+      >
+        {/* Skills I Have Card */}
+        <Card>
+          <CardHeader style={{ borderBottom: '1px solid var(--shadcn-border)', padding: '18px 20px' }}>
+            <div className="flex-between">
+              <div className="flex items-center gap-2">
+                <GraduationCap className="text-emerald" size={18} />
+                <div>
+                  <CardTitle className="text-base">Skills I Have</CardTitle>
+                  <CardDescription className="text-xs">Skills you can teach on the Marketplace</CardDescription>
+                </div>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowAddHave((prev) => !prev)}
               >
-                <Plus size={13} /> Add Skill
+                <Plus size={13} />
+                <span>Add Skill</span>
               </Button>
             </div>
+          </CardHeader>
 
+          <CardContent style={{ padding: '20px' }}>
             {showAddHave && (
               <form
                 onSubmit={handleAddSkillHave}
@@ -522,11 +535,12 @@ export default function ProfilePage() {
                   required
                   style={{ marginBottom: '8px' }}
                 />
-                <div className="flex gap-2 mb-3">
+                <div className="flex gap-2 mb-3" style={{ flexWrap: 'wrap' }}>
                   <select
                     value={haveDomain}
                     onChange={(e) => setHaveDomain(e.target.value as DomainCategory)}
                     className="shadcn-input"
+                    style={{ flex: 1, minWidth: '130px' }}
                   >
                     {DOMAINS.map((d) => (
                       <option key={d} value={d}>
@@ -538,6 +552,7 @@ export default function ProfilePage() {
                     value={haveLevel}
                     onChange={(e) => setHaveLevel(e.target.value as SkillLevel)}
                     className="shadcn-input"
+                    style={{ flex: 1, minWidth: '130px' }}
                   >
                     {LEVELS.map((l) => (
                       <option key={l} value={l}>
@@ -562,14 +577,14 @@ export default function ProfilePage() {
               </form>
             )}
 
-            <div className="tags mb-5">
+            <div className="tags" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               {profile.skillsHave.length === 0 ? (
                 <span className="text-xs text-secondary">
                   No teaching skills added yet. Add a skill to appear on the Marketplace!
                 </span>
               ) : (
                 profile.skillsHave.map((item, idx) => (
-                  <Badge key={item._id || idx} variant="emerald" style={{ gap: '6px' }}>
+                  <Badge key={item._id || idx} variant="emerald" style={{ gap: '6px', padding: '6px 10px' }}>
                     <span
                       onClick={() => handleCycleSkillHaveLevel(item)}
                       style={{ cursor: 'pointer' }}
@@ -599,21 +614,32 @@ export default function ProfilePage() {
                 ))
               )}
             </div>
+          </CardContent>
+        </Card>
 
-            {/* Skills I Want Section (Features #16-#19) */}
-            <div className="flex-between mb-3">
-              <h4 className="text-sm text-secondary uppercase tracking-wider font-bold">
-                Skills I Want
-              </h4>
+        {/* Skills I Want Card */}
+        <Card>
+          <CardHeader style={{ borderBottom: '1px solid var(--shadcn-border)', padding: '18px 20px' }}>
+            <div className="flex-between">
+              <div className="flex items-center gap-2">
+                <Target className="text-violet-400" size={18} style={{ color: '#a78bfa' }} />
+                <div>
+                  <CardTitle className="text-base">Skills I Want</CardTitle>
+                  <CardDescription className="text-xs">Target skills for Barter Matchmaking</CardDescription>
+                </div>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowAddWant((prev) => !prev)}
               >
-                <Plus size={13} /> Add Target
+                <Plus size={13} />
+                <span>Add Target</span>
               </Button>
             </div>
+          </CardHeader>
 
+          <CardContent style={{ padding: '20px' }}>
             {showAddWant && (
               <form
                 onSubmit={handleAddSkillWant}
@@ -633,11 +659,12 @@ export default function ProfilePage() {
                   required
                   style={{ marginBottom: '8px' }}
                 />
-                <div className="flex gap-2 mb-3">
+                <div className="flex gap-2 mb-3" style={{ flexWrap: 'wrap' }}>
                   <select
                     value={wantDomain}
                     onChange={(e) => setWantDomain(e.target.value as DomainCategory)}
                     className="shadcn-input"
+                    style={{ flex: 1, minWidth: '130px' }}
                   >
                     {DOMAINS.map((d) => (
                       <option key={d} value={d}>
@@ -649,6 +676,7 @@ export default function ProfilePage() {
                     value={wantLevel}
                     onChange={(e) => setWantLevel(e.target.value as SkillLevel)}
                     className="shadcn-input"
+                    style={{ flex: 1, minWidth: '130px' }}
                   >
                     {LEVELS.map((l) => (
                       <option key={l} value={l}>
@@ -673,20 +701,20 @@ export default function ProfilePage() {
               </form>
             )}
 
-            <div className="tags mb-5">
+            <div className="tags" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               {profile.skillsWant.length === 0 ? (
                 <span className="text-xs text-secondary">
                   No target skills added yet. Add skills you want to learn for Barter Matchmaking!
                 </span>
               ) : (
                 profile.skillsWant.map((item, idx) => (
-                  <Badge key={item._id || idx} variant="violet" style={{ gap: '6px' }}>
+                  <Badge key={item._id || idx} variant="violet" style={{ gap: '6px', padding: '6px 10px' }}>
                     <span
                       onClick={() => handleCycleSkillWantLevel(item)}
                       style={{ cursor: 'pointer' }}
                       title="Click to cycle target level"
                     >
-                      {item.skill}
+                      {item.skill} ({formatLevelLabel(item.level)})
                     </span>
                     {item._id && (
                       <button
@@ -710,197 +738,172 @@ export default function ProfilePage() {
                 ))
               )}
             </div>
-
-            <Separator style={{ margin: '20px 0' }} />
-
-            {/* Mentor Availability Time Slots CRUD (Features #20-#23) */}
-            <div className="flex-between mb-3">
-              <h4 className="text-sm text-secondary uppercase tracking-wider font-bold flex items-center gap-2">
-                <Calendar size={14} /> Mentor Availability Slots
-              </h4>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowAddSlot((prev) => !prev)}
-              >
-                <Plus size={13} /> Add Slot
-              </Button>
-            </div>
-
-            {showAddSlot && (
-              <form
-                onSubmit={handleAddAvailability}
-                className="mb-4"
-                style={{
-                  background: '#09090b',
-                  padding: '14px',
-                  borderRadius: '10px',
-                  border: '1px solid var(--shadcn-border)'
-                }}
-              >
-                <div className="flex gap-2 mb-3">
-                  <Input
-                    type="date"
-                    value={slotDate}
-                    onChange={(e) => setSlotDate(e.target.value)}
-                    required
-                  />
-                  <Input
-                    type="text"
-                    value={slotTime}
-                    onChange={(e) => setSlotTime(e.target.value)}
-                    placeholder="18:00-19:00, 20:00-21:00"
-                    required
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button type="submit" variant="default" size="sm">
-                    Add Time Slot
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowAddSlot(false)}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-            )}
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {profile.availability.length === 0 ? (
-                <p className="text-xs text-secondary">No availability slots scheduled yet.</p>
-              ) : (
-                profile.availability.map((entry, i) => (
-                  <Card
-                    key={entry._id || i}
-                    style={{
-                      background: '#09090b',
-                      padding: '10px 14px'
-                    }}
-                  >
-                    <div className="flex-between">
-                      <span className="font-bold text-sm text-emerald">{entry.date}</span>
-                      <div className="flex gap-2">
-                        {entry._id && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingSlotId(entry._id!);
-                                setEditingSlotsInput(entry.slots.join(', '));
-                              }}
-                              style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'var(--shadcn-muted-fg)',
-                                cursor: 'pointer'
-                              }}
-                              title="Edit slots"
-                            >
-                              <Edit3 size={13} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteAvailability(entry._id, entry.date)}
-                              style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: '#f87171',
-                                cursor: 'pointer'
-                              }}
-                              title="Delete date schedule"
-                            >
-                              <X size={14} />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    {editingSlotId === entry._id ? (
-                      <div className="flex gap-2 mt-2">
-                        <Input
-                          type="text"
-                          value={editingSlotsInput}
-                          onChange={(e) => setEditingSlotsInput(e.target.value)}
-                        />
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => handleUpdateAvailability(entry._id!, entry.date)}
-                        >
-                          Save
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="tags mt-2">
-                        {entry.slots.map((s, idx) => (
-                          <Badge key={idx} variant="cyan">
-                            {s}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </Card>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Right Column: Wallet Dashboard & Transaction Ledger (shadcn Card) */}
-        <Card>
-          <CardHeader
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              borderBottom: '1px solid var(--shadcn-border)'
-            }}
-          >
-            <div>
-              <CardTitle>Virtual Credit Wallet</CardTitle>
-              <CardDescription>90/10 Deflationary Escrow Settlement Ledger</CardDescription>
-            </div>
-            <div className="credit-balance flex items-center gap-2">
-              <span className="text-3xl font-bold text-emerald">{availableCredits}</span>
-              <span className="text-secondary">CR</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={refreshProfile}
-                title="Refresh Wallet Ledger"
-              >
-                <RefreshCw size={15} />
-              </Button>
-            </div>
-          </CardHeader>
-
-          <CardContent style={{ paddingTop: '24px' }}>
-            <div className="grid-stats mb-6">
-              <Card style={{ background: '#09090b', padding: '16px' }}>
-                <span className="text-secondary text-xs uppercase font-bold">
-                  Available Balance
-                </span>
-                <div className="font-bold text-xl text-emerald mt-1">{availableCredits} CR</div>
-              </Card>
-              <Card style={{ background: '#09090b', padding: '16px' }}>
-                <span className="text-secondary text-xs uppercase font-bold">
-                  Locked in Escrow
-                </span>
-                <div className="font-bold text-xl text-amber mt-1">{lockedInEscrow} CR</div>
-              </Card>
-            </div>
-
-            <h4 className="text-sm text-secondary uppercase tracking-wider font-bold mb-3">
-              Transaction Ledger
-            </h4>
-            <TransactionTable transactions={transactions} />
           </CardContent>
         </Card>
       </div>
-    </section>
+
+      {/* 3. Mentor Availability Calendar Schedule */}
+      <Card>
+        <CardHeader style={{ borderBottom: '1px solid var(--shadcn-border)', padding: '18px 24px' }}>
+          <div className="flex-between" style={{ flexWrap: 'wrap', gap: '12px' }}>
+            <div className="flex items-center gap-2">
+              <Calendar className="text-cyan-400" size={18} style={{ color: '#22d3ee' }} />
+              <div>
+                <CardTitle className="text-base">Mentor Availability Slots</CardTitle>
+                <CardDescription className="text-xs">
+                  Available hours learners can select when booking a 60-min session with you
+                </CardDescription>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAddSlot((prev) => !prev)}
+            >
+              <Plus size={13} />
+              <span>Add Date Slot</span>
+            </Button>
+          </div>
+        </CardHeader>
+
+        <CardContent style={{ padding: '20px 24px' }}>
+          {showAddSlot && (
+            <form
+              onSubmit={handleAddAvailability}
+              className="mb-4"
+              style={{
+                background: '#09090b',
+                padding: '16px',
+                borderRadius: '10px',
+                border: '1px solid var(--shadcn-border)'
+              }}
+            >
+              <div className="flex gap-2 mb-3" style={{ flexWrap: 'wrap' }}>
+                <Input
+                  type="date"
+                  value={slotDate}
+                  onChange={(e) => setSlotDate(e.target.value)}
+                  required
+                  style={{ flex: 1, minWidth: '150px' }}
+                />
+                <Input
+                  type="text"
+                  value={slotTime}
+                  onChange={(e) => setSlotTime(e.target.value)}
+                  placeholder="e.g. 18:00-19:00, 20:00-21:00"
+                  required
+                  style={{ flex: 2, minWidth: '200px' }}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit" variant="default" size="sm">
+                  Add Time Slot
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAddSlot(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {profile.availability.length === 0 ? (
+              <p className="text-xs text-secondary">
+                No availability slots scheduled yet. Add slots so other learners can book mentorship sessions with you!
+              </p>
+            ) : (
+              profile.availability.map((entry, i) => (
+                <Card
+                  key={entry._id || i}
+                  style={{
+                    background: '#09090b',
+                    padding: '12px 16px'
+                  }}
+                >
+                  <div className="flex-between" style={{ flexWrap: 'wrap', gap: '8px' }}>
+                    <span className="font-bold text-sm text-emerald">{entry.date}</span>
+                    <div className="flex gap-2">
+                      {entry._id && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingSlotId(entry._id!);
+                              setEditingSlotsInput(entry.slots.join(', '));
+                            }}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: 'var(--shadcn-muted-fg)',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontSize: '0.8rem'
+                            }}
+                            title="Edit slots"
+                          >
+                            <Edit3 size={13} />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteAvailability(entry._id, entry.date)}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: '#f87171',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontSize: '0.8rem'
+                            }}
+                            title="Delete date schedule"
+                          >
+                            <X size={14} />
+                            <span>Delete</span>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  {editingSlotId === entry._id ? (
+                    <div className="flex gap-2 mt-2" style={{ flexWrap: 'wrap' }}>
+                      <Input
+                        type="text"
+                        value={editingSlotsInput}
+                        onChange={(e) => setEditingSlotsInput(e.target.value)}
+                        style={{ flex: 1, minWidth: '180px' }}
+                      />
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => handleUpdateAvailability(entry._id!, entry.date)}
+                      >
+                        Save
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="tags mt-2" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {entry.slots.map((s, idx) => (
+                        <Badge key={idx} variant="cyan">
+                          {s}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

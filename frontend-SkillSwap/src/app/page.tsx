@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   ShieldCheck,
@@ -17,7 +17,9 @@ import {
   Repeat,
   Bot,
   Scale,
-  CheckCircle2
+  CheckCircle2,
+  Menu,
+  X
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -34,6 +36,7 @@ import {
 export default function LandingPage() {
   const { user, isLoadingAuth } = useAuth();
   const scrollAnimRef = useRef<number | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const iconBoxStyle = (rgb: string): React.CSSProperties => ({
     width: '46px',
@@ -58,10 +61,11 @@ export default function LandingPage() {
   };
 
   const handleSmoothScroll = (
-    e: React.MouseEvent<HTMLAnchorElement | HTMLDivElement>,
+    e: React.MouseEvent<HTMLAnchorElement | HTMLDivElement | HTMLButtonElement>,
     targetId: string
   ) => {
     e.preventDefault();
+    setMobileMenuOpen(false);
 
     if (scrollAnimRef.current !== null) {
       window.cancelAnimationFrame(scrollAnimRef.current);
@@ -74,7 +78,7 @@ export default function LandingPage() {
         : (() => {
             const el = document.getElementById(targetId);
             if (!el) return 0;
-            const headerOffset = 98;
+            const headerOffset = 90;
             return el.getBoundingClientRect().top + window.scrollY - headerOffset;
           })();
 
@@ -111,11 +115,13 @@ export default function LandingPage() {
         background: 'var(--shadcn-bg)',
         color: 'var(--shadcn-fg)',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        overflowX: 'hidden'
       }}
     >
       {/* Fixed Top shadcn/ui Header (Frozen at Top on Scroll) */}
       <header
+        className="landing-header"
         style={{
           position: 'fixed',
           top: 0,
@@ -125,13 +131,13 @@ export default function LandingPage() {
           zIndex: 1000,
           height: '72px',
           borderBottom: '1px solid var(--shadcn-border)',
-          background: 'rgba(9, 9, 11, 0.88)',
+          background: 'rgba(9, 9, 11, 0.92)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '0 40px'
+          padding: '0 24px'
         }}
       >
         <div
@@ -145,7 +151,8 @@ export default function LandingPage() {
           </h2>
         </div>
 
-        <nav className="flex items-center" style={{ gap: '6px' }}>
+        {/* Desktop Navigation Links */}
+        <nav className="landing-desktop-nav flex items-center" style={{ gap: '6px' }}>
           <Button
             variant="ghost"
             size="sm"
@@ -169,14 +176,15 @@ export default function LandingPage() {
           </Button>
         </nav>
 
-        <div className="flex items-center gap-3">
+        {/* Desktop Auth Actions */}
+        <div className="landing-desktop-actions flex items-center gap-3">
           {!isLoadingAuth && user ? (
             <Link
               href={user.role === 'ADMIN' ? '/admin/disputes' : '/marketplace'}
               style={{ textDecoration: 'none' }}
             >
               <Button variant="default">
-                <span>Go to Dashboard ({user.displayName})</span>
+                <span>Dashboard ({user.displayName})</span>
                 <ArrowRight size={16} />
               </Button>
             </Link>
@@ -197,25 +205,123 @@ export default function LandingPage() {
             </>
           )}
         </div>
+
+        {/* Mobile Hamburger Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setMobileMenuOpen((prev) => !prev)}
+          className="landing-mobile-toggle"
+          style={{ color: 'var(--shadcn-fg)' }}
+          aria-label="Toggle menu"
+        >
+          {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+        </Button>
       </header>
+
+      {/* Mobile Drawer Dropdown Menu */}
+      {mobileMenuOpen && (
+        <div
+          className="landing-mobile-menu"
+          style={{
+            position: 'fixed',
+            top: '72px',
+            left: 0,
+            right: 0,
+            background: 'rgba(9, 9, 11, 0.98)',
+            borderBottom: '1px solid var(--shadcn-border)',
+            padding: '20px 24px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            zIndex: 999,
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
+          }}
+        >
+          <Button
+            variant="ghost"
+            size="sm"
+            style={{ justifyContent: 'flex-start' }}
+            onClick={(e: any) => handleSmoothScroll(e, 'how-it-works')}
+          >
+            How It Works
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            style={{ justifyContent: 'flex-start' }}
+            onClick={(e: any) => handleSmoothScroll(e, 'architecture')}
+          >
+            Escrow Architecture
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            style={{ justifyContent: 'flex-start' }}
+            onClick={(e: any) => handleSmoothScroll(e, 'domains')}
+          >
+            Skill Domains
+          </Button>
+
+          <div style={{ height: '1px', background: 'var(--shadcn-border)', margin: '4px 0' }} />
+
+          {!isLoadingAuth && user ? (
+            <Link
+              href={user.role === 'ADMIN' ? '/admin/disputes' : '/marketplace'}
+              style={{ textDecoration: 'none' }}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Button variant="default" className="w-full">
+                <span>Dashboard ({user.displayName})</span>
+                <ArrowRight size={16} />
+              </Button>
+            </Link>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <Link
+                href="/login"
+                style={{ textDecoration: 'none' }}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Button variant="outline" className="w-full">
+                  <LogIn size={15} />
+                  <span>Sign In</span>
+                </Button>
+              </Link>
+              <Link
+                href="/register"
+                style={{ textDecoration: 'none' }}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Button variant="default" className="w-full">
+                  <UserPlus size={15} />
+                  <span>Create Account (+100 CR Bonus)</span>
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Main Scrollable Content */}
       <main
+        className="landing-main"
         style={{
           flex: 1,
           maxWidth: '1220px',
           width: '100%',
           margin: '0 auto',
-          padding: '128px 32px 100px',
+          padding: '110px 20px 80px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '96px'
+          gap: '80px'
         }}
       >
         {/* 1. HERO SECTION */}
         <Card
+          className="hero-card"
           style={{
-            padding: '64px 44px',
+            padding: '56px 28px',
             textAlign: 'center',
             display: 'flex',
             flexDirection: 'column',
@@ -224,7 +330,7 @@ export default function LandingPage() {
               'radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.12), #0c0c0f 68%)'
           }}
         >
-          <Badge variant="emerald" style={{ padding: '6px 14px', marginBottom: '24px' }}>
+          <Badge variant="emerald" style={{ padding: '6px 14px', marginBottom: '20px' }}>
             <Sparkles size={13} />
             <span>Decentralized Peer-to-Peer Knowledge Barter Economy</span>
           </Badge>
@@ -232,9 +338,8 @@ export default function LandingPage() {
           <h1
             className="hero-title"
             style={{
-              fontSize: '3.2rem',
               maxWidth: '840px',
-              lineHeight: 1.14,
+              lineHeight: 1.15,
               marginBottom: '20px',
               letterSpacing: '-0.03em'
             }}
@@ -247,8 +352,7 @@ export default function LandingPage() {
             className="hero-subtitle"
             style={{
               maxWidth: '670px',
-              margin: '0 auto 36px',
-              fontSize: '1.08rem',
+              margin: '0 auto 32px',
               lineHeight: 1.7
             }}
           >
@@ -258,8 +362,8 @@ export default function LandingPage() {
           </p>
 
           <div
-            className="flex items-center gap-4"
-            style={{ flexWrap: 'wrap', justifyContent: 'center', marginBottom: '52px' }}
+            className="hero-cta-group flex items-center gap-4"
+            style={{ flexWrap: 'wrap', justifyContent: 'center', marginBottom: '44px' }}
           >
             {!isLoadingAuth && user ? (
               <Link
@@ -289,62 +393,59 @@ export default function LandingPage() {
             )}
           </div>
 
-          {/* Economy Metrics Strip (shadcn Cards) */}
+          {/* Economy Metrics Strip */}
           <div
+            className="metrics-grid"
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
-              gap: '16px',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '14px',
               width: '100%'
             }}
           >
-            <Card style={{ background: '#09090b' }}>
-              <CardHeader style={{ padding: '20px', textAlign: 'center' }}>
-                <div className="text-emerald font-bold" style={{ fontSize: '1.75rem' }}>
-                  +100 CR
-                </div>
-                <CardDescription>Instant Onboarding Wallet Bonus</CardDescription>
-              </CardHeader>
+            <Card style={{ background: '#09090b', padding: '16px' }}>
+              <span className="text-secondary text-xs uppercase font-bold tracking-wider">
+                Starting Bonus
+              </span>
+              <div className="font-bold text-2xl text-emerald mt-1">+100 CR</div>
+              <p className="text-xs text-secondary mt-1">Given to all verified accounts</p>
             </Card>
 
-            <Card style={{ background: '#09090b' }}>
-              <CardHeader style={{ padding: '20px', textAlign: 'center' }}>
-                <div className="text-cyan font-bold" style={{ fontSize: '1.75rem' }}>
-                  50 CR
-                </div>
-                <CardDescription>Fixed 60-Min Session Escrow Lock</CardDescription>
-              </CardHeader>
+            <Card style={{ background: '#09090b', padding: '16px' }}>
+              <span className="text-secondary text-xs uppercase font-bold tracking-wider">
+                Session Escrow
+              </span>
+              <div className="font-bold text-2xl text-cyan mt-1">50 CR</div>
+              <p className="text-xs text-secondary mt-1">Locked per 60-minute session</p>
             </Card>
 
-            <Card style={{ background: '#09090b' }}>
-              <CardHeader style={{ padding: '20px', textAlign: 'center' }}>
-                <div className="text-emerald font-bold" style={{ fontSize: '1.75rem' }}>
-                  +45 CR (90%)
-                </div>
-                <CardDescription>Released to Mentor on Completion</CardDescription>
-              </CardHeader>
+            <Card style={{ background: '#09090b', padding: '16px' }}>
+              <span className="text-secondary text-xs uppercase font-bold tracking-wider">
+                Mentor Release
+              </span>
+              <div className="font-bold text-2xl text-violet mt-1">45 CR (90%)</div>
+              <p className="text-xs text-secondary mt-1">Paid directly to mentor wallet</p>
             </Card>
 
-            <Card style={{ background: '#09090b' }}>
-              <CardHeader style={{ padding: '20px', textAlign: 'center' }}>
-                <div className="text-amber font-bold" style={{ fontSize: '1.75rem' }}>
-                  -5 CR (10%)
-                </div>
-                <CardDescription>Deflationary Platform Fee Burn</CardDescription>
-              </CardHeader>
+            <Card style={{ background: '#09090b', padding: '16px' }}>
+              <span className="text-secondary text-xs uppercase font-bold tracking-wider">
+                Deflationary Burn
+              </span>
+              <div className="font-bold text-2xl text-amber mt-1">5 CR (10%)</div>
+              <p className="text-xs text-secondary mt-1">Permanently removed from supply</p>
             </Card>
           </div>
         </Card>
 
-        {/* 2. HOW IT WORKS (4-STEP WORKFLOW) */}
+        {/* 2. HOW IT WORKS */}
         <section id="how-it-works">
-          <div className="text-center" style={{ marginBottom: '44px' }}>
+          <div className="text-center" style={{ marginBottom: '40px' }}>
             <Badge variant="cyan" style={{ padding: '5px 14px' }}>
               Step-by-Step Protocol
             </Badge>
             <h2
+              className="section-title"
               style={{
-                fontSize: '2.2rem',
                 fontWeight: 800,
                 marginTop: '16px',
                 marginBottom: '12px',
@@ -354,8 +455,8 @@ export default function LandingPage() {
               How the <span className="text-gradient">Zero-Trust Barter Lifecycle</span> Works
             </h2>
             <p
-              className="text-secondary"
-              style={{ maxWidth: '620px', margin: '0 auto', lineHeight: 1.65, fontSize: '0.98rem' }}
+              className="text-secondary section-desc"
+              style={{ maxWidth: '620px', margin: '0 auto', lineHeight: 1.65 }}
             >
               No credit cards or cash required. Learn from peers and earn credits by teaching what
               you know.
@@ -363,10 +464,11 @@ export default function LandingPage() {
           </div>
 
           <div
+            className="steps-grid"
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(255px, 1fr))',
-              gap: '20px'
+              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+              gap: '18px'
             }}
           >
             <Card className="shadcn-card-hover" style={{ display: 'flex', flexDirection: 'column' }}>
@@ -447,13 +549,13 @@ export default function LandingPage() {
 
         {/* 3. CORE ARCHITECTURE HIGHLIGHTS */}
         <section id="architecture">
-          <div className="text-center" style={{ marginBottom: '44px' }}>
+          <div className="text-center" style={{ marginBottom: '40px' }}>
             <Badge variant="emerald" style={{ padding: '5px 14px' }}>
               System Architecture
             </Badge>
             <h2
+              className="section-title"
               style={{
-                fontSize: '2.2rem',
                 fontWeight: 800,
                 marginTop: '16px',
                 marginBottom: '12px',
@@ -463,8 +565,8 @@ export default function LandingPage() {
               Built for <span className="text-gradient">Security, Fairness &amp; Speed</span>
             </h2>
             <p
-              className="text-secondary"
-              style={{ maxWidth: '620px', margin: '0 auto', lineHeight: 1.65, fontSize: '0.98rem' }}
+              className="text-secondary section-desc"
+              style={{ maxWidth: '620px', margin: '0 auto', lineHeight: 1.65 }}
             >
               Every credit transfer, session room, and domain check is enforced by strict
               server-side guarantees.
@@ -472,10 +574,11 @@ export default function LandingPage() {
           </div>
 
           <div
+            className="arch-grid"
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(255px, 1fr))',
-              gap: '20px'
+              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+              gap: '18px'
             }}
           >
             <Card className="shadcn-card-hover">
@@ -545,13 +648,13 @@ export default function LandingPage() {
 
         {/* 4. PERMITTED SKILL DOMAINS */}
         <section id="domains">
-          <div className="text-center" style={{ marginBottom: '44px' }}>
+          <div className="text-center" style={{ marginBottom: '40px' }}>
             <Badge variant="violet" style={{ padding: '5px 14px' }}>
               Verified Categories
             </Badge>
             <h2
+              className="section-title"
               style={{
-                fontSize: '2.2rem',
                 fontWeight: 800,
                 marginTop: '16px',
                 marginBottom: '12px',
@@ -561,18 +664,19 @@ export default function LandingPage() {
               Permitted <span className="text-gradient">Knowledge Domains</span>
             </h2>
             <p
-              className="text-secondary"
-              style={{ maxWidth: '620px', margin: '0 auto', lineHeight: 1.65, fontSize: '0.98rem' }}
+              className="text-secondary section-desc"
+              style={{ maxWidth: '620px', margin: '0 auto', lineHeight: 1.65 }}
             >
               Protected by automated domain boundary enforcement to ensure ethical peer learning.
             </p>
           </div>
 
           <div
+            className="domains-grid"
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(255px, 1fr))',
-              gap: '20px'
+              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+              gap: '18px'
             }}
           >
             <Card
@@ -678,7 +782,7 @@ export default function LandingPage() {
         <Card
           className="text-center"
           style={{
-            padding: '56px 40px',
+            padding: '48px 24px',
             border: '1px solid rgba(16, 185, 129, 0.35)',
             background:
               'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, #0c0c0f 100%)',
@@ -697,15 +801,14 @@ export default function LandingPage() {
           >
             <ShieldCheck className="text-emerald" size={28} />
           </div>
-          <h2 style={{ fontSize: '2.1rem', fontWeight: 800, marginBottom: '12px' }}>
+          <h2 className="section-title" style={{ fontWeight: 800, marginBottom: '12px' }}>
             Ready to Join the SkillSwap Barter Network?
           </h2>
           <p
-            className="text-secondary"
+            className="text-secondary section-desc"
             style={{
               maxWidth: '580px',
               margin: '0 auto 32px',
-              fontSize: '0.98rem',
               lineHeight: 1.68
             }}
           >
@@ -733,7 +836,7 @@ export default function LandingPage() {
       <footer
         style={{
           borderTop: '1px solid var(--shadcn-border)',
-          padding: '28px 32px',
+          padding: '24px 20px',
           textAlign: 'center',
           color: 'var(--shadcn-muted-fg)',
           fontSize: '0.85rem',

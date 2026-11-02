@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/features/dashboard/components/Sidebar';
 import { Navbar } from '@/features/dashboard/components/Navbar';
@@ -13,6 +13,7 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const { user, isLoadingAuth } = useAuth();
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoadingAuth && !user) {
@@ -40,9 +41,23 @@ export default function DashboardLayout({
 
   return (
     <div className="app-layout">
-      <Sidebar />
+      {/* Mobile Drawer Backdrop Overlay */}
+      {mobileSidebarOpen && (
+        <div
+          className="sidebar-backdrop"
+          onClick={() => setMobileSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Responsive Collapsible Sidebar */}
+      <Sidebar
+        isOpen={mobileSidebarOpen}
+        onClose={() => setMobileSidebarOpen(false)}
+      />
+
       <div className="main-wrapper">
-        <Navbar />
+        <Navbar onToggleSidebar={() => setMobileSidebarOpen((prev) => !prev)} />
         <main id="app-view">{children}</main>
       </div>
     </div>
