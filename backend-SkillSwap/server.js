@@ -46,6 +46,7 @@ setupSessionSocket(io, userSockets);
 // Security & Core Middleware
 app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 
 // Rate Limiter on Auth & AI routes
@@ -70,7 +71,7 @@ app.get('/api/health', (req, res) => {
 
 // Strict Database Guard Middleware (In-memory fallback disabled)
 app.use('/api', (req, res, next) => {
-  if (req.path === '/health') return next();
+  if (req.method === 'OPTIONS' || req.path === '/health') return next();
   const { isMongoConnected } = require('./src/config/db');
   if (!isMongoConnected()) {
     return res.status(503).json({

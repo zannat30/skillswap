@@ -1,5 +1,17 @@
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
+function getApiBaseUrl(): string {
+  let url = (
+    process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api'
+  ).trim();
+  // Remove trailing slashes
+  url = url.replace(/\/+$/, '');
+  // If the user did not include /api at the end, append it
+  if (!url.endsWith('/api')) {
+    url = `${url}/api`;
+  }
+  return url;
+}
+
+const API_BASE_URL = getApiBaseUrl();
 
 export function triggerDatabaseErrorPopup(message: string, code = 'DATABASE_ERROR') {
   if (typeof window !== 'undefined') {
@@ -27,14 +39,18 @@ export async function apiRequest<T = any>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const fullUrl = `${API_BASE_URL}${cleanEndpoint}`;
+
   let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    response = await fetch(fullUrl, {
       ...options,
       headers
     });
   } catch (networkErr: any) {
-    const errorMsg = 'Data fetching error from database: Unable to reach backend server or MongoDB Atlas.';
+    const errorMsg =
+      'Data fetching error from database: Unable to reach backend server. Please verify your internet and backend status.';
     triggerDatabaseErrorPopup(errorMsg, 'CONNECTION_ERROR');
     const err: any = new Error(errorMsg);
     err.code = 'DATABASE_ERROR';
@@ -42,16 +58,22 @@ export async function apiRequest<T = any>(
     throw err;
   }
 
+  let rawText = '';
   let data: any = {};
   try {
-    data = await response.json();
+    rawText = await response.text();
+    data = JSON.parse(rawText);
   } catch (_) {
     data = {};
   }
 
   if (!response.ok) {
     const errorMessage =
-      data?.error?.message || data?.message || 'API Request failed';
+      data?.error?.message ||
+      data?.message ||
+      (response.status === 404
+        ? `API endpoint not found (404) at ${fullUrl}. Please check backend URL in Vercel.`
+        : `Request failed (${response.status}): ${rawText.slice(0, 120) || 'Server error'}`);
     const errorCode = data?.error?.code || 'API_ERROR';
 
     // If database connection error, 503, or database failure from backend
@@ -74,4 +96,4 @@ export async function apiRequest<T = any>(
   return data as T;
 }
 
-export { API_BASE_URL };
+export { API_BASE_URL, getApiBaseUrl };
