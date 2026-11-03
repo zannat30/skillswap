@@ -46,7 +46,6 @@ setupSessionSocket(io, userSockets);
 // Security & Core Middleware
 app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
 app.use(express.json());
 
 // Rate Limiter on Auth & AI routes
